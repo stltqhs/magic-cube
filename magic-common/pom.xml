@@ -8,9 +8,9 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
   <groupId>com.yuqing.magic</groupId>
-  <artifactId>common</artifactId>
+  <artifactId>magic-common</artifactId>
   <version>1.0-SNAPSHOT</version>
-  <name>common</name>
+  <name>magic-common</name>
   <url>http://maven.apache.org</url>
   <dependencies>
     <dependency>

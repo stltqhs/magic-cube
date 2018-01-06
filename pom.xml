@@ -18,7 +18,7 @@
   </dependencies>
 
   <modules>
-    <module>common</module>
+    <module>magic-common</module>
   </modules>
 
 </project>
