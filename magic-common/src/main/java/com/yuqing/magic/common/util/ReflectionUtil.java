@@ -13,7 +13,7 @@ import java.lang.reflect.Method;
  *
  * @author yuqing
  *
- * @see 1.0
+ * @see 1.0.1
  */
 public class ReflectionUtil {
 
@@ -66,26 +66,24 @@ public class ReflectionUtil {
      * @return
      */
     public static Field getField(Class clazz, String fieldName, boolean recursive) {
-        try {
-            Field field = null;
-            Class self = clazz;
+        Field field = null;
+        Class self = clazz;
 
-            while (self != null) {
-
-                field = clazz.getDeclaredField(fieldName);
-
-                if (recursive && field == null) {
-                    self = clazz.getSuperclass();
-                } else {
-                    break;
-                }
+        while (self != null) {
+            try {
+                field = self.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException e) {
+                logger.debug(fieldName, e);
             }
-            return field;
-        } catch (NoSuchFieldException e) {
-            logger.error(fieldName, e);
-        }
 
-        return null;
+            if (recursive && field == null) {
+                self = clazz.getSuperclass();
+            } else {
+                break;
+            }
+        }
+        return field;
+
     }
 
     /**
@@ -113,7 +111,7 @@ public class ReflectionUtil {
         field.setAccessible(true);
 
         try {
-            field.get(target);
+            return field.get(target);
         } catch (IllegalAccessException e) {
             logger.error("", e);
         }
@@ -155,26 +153,24 @@ public class ReflectionUtil {
      * @return
      */
     public static Method getMethod(Class clazz, String methodName, Class[] args, boolean recursive) {
-        try {
-            Method method = null;
-            Class self = clazz;
+        Method method = null;
+        Class self = clazz;
 
-            while (self != null) {
+        while (self != null) {
 
-                method = clazz.getDeclaredMethod(methodName, args);
-
-                if (recursive && method == null) {
-                    self = clazz.getSuperclass();
-                } else {
-                    break;
-                }
+            try {
+                method = self.getDeclaredMethod(methodName, args);
+            } catch (NoSuchMethodException e) {
+                logger.debug(methodName, e);
             }
-            return method;
-        } catch (NoSuchMethodException e) {
-            logger.error(methodName, e);
-        }
 
-        return null;
+            if (recursive && method == null) {
+                self = clazz.getSuperclass();
+            } else {
+                break;
+            }
+        }
+        return method;
     }
 
     /**

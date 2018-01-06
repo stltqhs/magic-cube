@@ -8,6 +8,8 @@ import org.junit.runners.JUnit4;
 /**
  * MD5Util帮助类
  * @author yuqing
+ *
+ * @since 1.0.1
  */
 @RunWith(JUnit4.class)
 public class MD5UtilTest {

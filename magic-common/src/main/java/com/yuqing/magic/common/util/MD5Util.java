@@ -4,13 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.math.BigInteger;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.security.MessageDigest;
 
 /**
  * MD5工具.
+ *
+ * @author yuqing
+ *
+ * @since 1.0.1
  */
 public class MD5Util {
 

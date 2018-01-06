@@ -10,6 +10,8 @@ import java.sql.Time;
 /**
  * DateTimeUtil的测试类
  * @author yuqing
+ *
+ * @since 1.0.1
  */
 @RunWith(JUnit4.class)
 public class DateTimeUtilTest {

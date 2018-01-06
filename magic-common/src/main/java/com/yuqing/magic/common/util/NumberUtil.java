@@ -13,7 +13,7 @@ import java.util.Map;
  *
  * @author yuqing
  *
- * @since 1.0
+ * @since 1.0.1
  */
 public class NumberUtil {
 
