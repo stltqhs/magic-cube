@@ -32,7 +32,15 @@ import java.util.concurrent.*;
 
 /**
  * HTTP客户端工具，提供同步请求和异步请求
- *
+ * <p>
+ *     1.同步调用 HttpClientUtil.get(url);
+ * </p>
+ * <p>
+ *     <code>
+ *     2.异步调用 Future<String> result = HttpClientUtil.getAsync(url);
+ *     result.get();
+ *     </code>
+ * </p>
  * @author yuqing
  */
 public class HttpClientUtil {
@@ -56,7 +64,7 @@ public class HttpClientUtil {
     public static final String DEFAULT_CHARSET = "UTF-8";
 
     public static final int BRIEF_LENGTH = 32;
-    
+
     public static final String TAILING = "......";
 
     private static boolean hasUnsafeClass;
@@ -796,10 +804,24 @@ public class HttpClientUtil {
         return new ByteArrayEntity(entity);
     }
 
+    /**
+     * 将form序列化为字节，字节格式是form表单格式
+     * @param form
+     * @param charset
+     * @param urlEncode 是否要进行URL Encode
+     * @return
+     */
     public static byte[] serializeForEntity(Map<String, String> form, String charset, boolean urlEncode) {
         return serializeForEntity(serializeToStringForEntity(form, charset, urlEncode), charset);
     }
 
+    /**
+     * 将form序列化为字符串，字符串格式是form表单格式
+     * @param form
+     * @param charset
+     * @param urlEncode 是否要进行URL Encode
+     * @return
+     */
     public static String serializeToStringForEntity(Map<String, String> form, String charset, boolean urlEncode) {
         if (form == null) {
             return "";
@@ -848,6 +870,12 @@ public class HttpClientUtil {
         return sb.toString();
     }
 
+    /**
+     * 将formDate序列化为字节
+     * @param formDate
+     * @param charset
+     * @return
+     */
     public static byte[] serializeForEntity(String formDate, String charset) {
         try {
             return formDate.getBytes(charset);
@@ -857,6 +885,23 @@ public class HttpClientUtil {
         return null;
     }
 
+    /**
+     * 将data序列化为字节<br/>
+     * <p>处理方式如下</p>
+     * <p>
+     *     1.如果data为字节或者为null，不做任何处理。直接返回data
+     * </p>
+     * <p>
+     *     2.如果data为字符串，序列化为字节
+     * </p>
+     * <p>
+     *     3.如果data为Map，先生成form表单内容的字符串，然后转换为字节
+     * </p>
+     * @param data
+     * @param charset
+     * @param urlEncode
+     * @return
+     */
     public static byte[] serializeForEntity(Object data, String charset, boolean urlEncode) {
         if (data == null) {
             return null;
@@ -876,10 +921,22 @@ public class HttpClientUtil {
         return serializeForEntity(JSONObject.toJSONString(data), charset);
     }
 
+    /**
+     * params 为 Query String，将其与url拼接
+     * @param url
+     * @param params
+     * @return
+     */
     public static String concatQueryString(String url, Map<String, String> params) {
         return concatQueryString(url, serializeToStringForEntity(params, DEFAULT_CHARSET, true));
     }
 
+    /**
+     * queryString 为 String，将其与url拼接
+     * @param url
+     * @param queryString
+     * @return
+     */
     public static String concatQueryString(String url, String queryString) {
         StringBuilder sb = new StringBuilder();
         sb.append(url);
@@ -893,6 +950,9 @@ public class HttpClientUtil {
         return sb.toString();
     }
 
+    /**
+     * 释放资源
+     */
     public static void close() {
         try {
             httpClient.close();
@@ -907,6 +967,11 @@ public class HttpClientUtil {
         }
     }
 
+    /**
+     * 获取请求的执行时间
+     * @param httpResponse
+     * @return 返回值小于0表示无法获取
+     */
     public static long getCostTime(HttpResponse httpResponse) {
         HttpResponseHandler handler = getHttpResponseHandler(httpResponse);
         if (handler == null) {
