@@ -6,7 +6,7 @@ package com.yuqing.magic.mybatis.mapper.common;
  *
  * @since 1.0.1
  */
-public interface DirtyUpdateMapper {
+public interface DirtyUpdateMapper<T> {
 
-    int updateByPrimaryKeyDirtySelective(Object object);
+    int updateByPrimaryKeyDirtySelective(T t);
 }

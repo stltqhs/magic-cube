@@ -6,8 +6,8 @@ package com.yuqing.magic.mybatis.mapper.common;
  *
  * @since 1.0.1
  */
-public interface VersionUpdateMapper {
+public interface VersionUpdateMapper<T> {
 
-    int updateByPrimaryKeyVersion(Object object);
+    int updateByPrimaryKeyVersion(T t);
 
 }
