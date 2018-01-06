@@ -5,7 +5,7 @@
   <parent>
     <groupId>com.yuqing</groupId>
     <artifactId>magic-cube</artifactId>
-    <version>1.0</version>
+    <version>1.0.1</version>
   </parent>
   <groupId>com.yuqing.magic</groupId>
   <artifactId>magic-common</artifactId>

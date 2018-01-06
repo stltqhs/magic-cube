@@ -2,6 +2,7 @@ package com.yuqing.magic.common.util;
 
 import com.alibaba.fastjson.JSONObject;
 import com.sun.xml.internal.messaging.saaj.util.TeeInputStream;
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -79,40 +80,18 @@ public class HttpClientUtil {
 
     private static CloseableHttpClient httpClient = HttpClients.createDefault();
 
-    public static final String SUN_MISC_UNSAFE = "sun.misc.Unsafe";
-
     static {
         httpAsyncClient.start();
         try {
-            Class.forName(SUN_MISC_UNSAFE);
-            hasUnsafeClass = true;
-            unsafeObject = getUnsafeObject();
+            hasUnsafeClass = ReflectionUtil.hasClass(ReflectionUtil.SUN_MISC_UNSAFE);
+            unsafeObject = ReflectionUtil.getUnsafe();
             if (unsafeObject != null) {
-                hOffset = ((Unsafe) unsafeObject).objectFieldOffset
-                        (Proxy.class.getDeclaredField("h"));
+                hOffset = ReflectionUtil.getOffset(Proxy.class, "h");
             }
         } catch (Exception e) {
             logger.debug("", e);
             hasUnsafeClass = false;
         }
-    }
-
-    private static Object getUnsafeObject() {
-        try {
-            Field field = Class.forName(SUN_MISC_UNSAFE).getDeclaredField("theUnsafe");
-            if (field != null) {
-                field.setAccessible(true);
-                return field.get(null);
-            }
-        } catch (NoSuchFieldException e) {
-            logger.debug("", e);
-        } catch (ClassNotFoundException e) {
-            logger.debug("", e);
-        } catch (IllegalAccessException e) {
-            logger.debug("", e);
-        }
-
-        return null;
     }
 
     private static class MyHttpEntityWrapper extends HttpEntityWrapper {

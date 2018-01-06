@@ -4,7 +4,7 @@
   <groupId>com.yuqing</groupId>
   <artifactId>magic-cube</artifactId>
   <packaging>pom</packaging>
-  <version>1.0</version>
+  <version>1.0.1</version>
   <name>magic-cube</name>
   <url>http://maven.apache.org</url>
 
