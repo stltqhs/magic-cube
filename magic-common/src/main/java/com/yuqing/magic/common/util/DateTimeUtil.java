@@ -16,10 +16,19 @@ import java.util.*;
  */
 public class DateTimeUtil {
 
+    /**
+     * 去掉以0开头的时间
+     */
     public static final int STRIP_LEADING_ZERO_FIELD_STYLE = 0x01;
 
+    /**
+     * 去掉以0结尾的时间
+     */
     public static final int STRIP_TAILING_ZERO_FIELD_STYLE = 0x02;
 
+    /**
+     * 去掉某个时间时是否需要递归
+     */
     public static final int RECURSIVE_STRIP_FLAG = 0x04;
 
     public static final int RECURSIVE_STRIP_LEADING_ZERO_FIELD_STYLE = STRIP_LEADING_ZERO_FIELD_STYLE | RECURSIVE_STRIP_FLAG; // 0x01 | 0x04
@@ -184,9 +193,24 @@ public class DateTimeUtil {
      * 将秒转换为人类可读的时间，比如
      * 183秒转换后是"3分3秒"。
      * 可以使用%02s这样的格式，%可作为%的转义符号
+     * <p>
+     *     1.DateTimeUtil.second2Human(183, "%h小时%m分%s秒", DateTimeUtil.DEFAULT_STYLE); // return 0小时3分3秒
+     * </p>
+     * <p>
+     *     2.DateTimeUtil.second2Human(183, "%02h小时%02m分%02s秒", DateTimeUtil.DEFAULT_STYLE); // return 00小时03分03秒
+     * </p>
+     * <p>
+     *     3.DateTimeUtil.second2Human(5 * 60 * 60,
+     *                                  "%h小时%m分%s秒",
+     *                                  DateTimeUtil.STRIP_LEADING_ZERO_FIELD_STYLE
+     *                                  | DateTimeUtil.STRIP_TAILING_ZERO_FIELD_STYLE
+     *                                  | DateTimeUtil.RECURSIVE_STRIP_FLAG); // return 5小时
+     * </p>
      * @param second 需要转换的秒数
      * @param format 类型与String.format，支持的占位符有%s（秒），%m（分），%h（小时）
-     * @param style
+     * @param style 可以为STRIP_LEADING_ZERO_FIELD_STYLE、STRIP_TAILING_ZERO_FIELD_STYLE、
+     *              RECURSIVE_STRIP_FLAG、RECURSIVE_STRIP_LEADING_ZERO_FIELD_STYLE、
+     *              DEFAULT_STYLE的组合
      * @return
      */
     public static String second2Human(int second, String format, int style) {
