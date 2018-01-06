@@ -42,6 +42,8 @@ import java.util.concurrent.*;
  *     </code>
  * </p>
  * @author yuqing
+ *
+ * @since 1.0
  */
 public class HttpClientUtil {
 
