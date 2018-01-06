@@ -2,6 +2,8 @@ package com.yuqing.magic.common.util;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import java.sql.Time;
 
@@ -9,6 +11,7 @@ import java.sql.Time;
  * DateTimeUtil的测试类
  * @author yuqing
  */
+@RunWith(JUnit4.class)
 public class DateTimeUtilTest {
 
     @Test
