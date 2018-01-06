@@ -188,7 +188,7 @@ public class ReflectionUtil {
     }
 
     /**
-     * 获取一个类的字段的便宜值
+     * 获取一个类的字段的偏移值
      * @param clazz
      * @param fieldName
      * @return 返回-1表示无法获取字段的偏移值
