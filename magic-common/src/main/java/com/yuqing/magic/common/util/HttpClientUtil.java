@@ -816,6 +816,17 @@ public class HttpClientUtil {
     }
 
     /**
+     * serializeForEntity(Map<String, String> form, String charset, boolean urlEncode)的别名
+     * @param form
+     * @param charset
+     * @param urlEncode
+     * @return
+     */
+    public static byte[] m2b(Map<String, String> form, String charset, boolean urlEncode) {
+        return serializeForEntity(form, charset, urlEncode);
+    }
+
+    /**
      * 将form序列化为字符串，字符串格式是form表单格式
      * @param form
      * @param charset
@@ -871,18 +882,39 @@ public class HttpClientUtil {
     }
 
     /**
+     * serializeToStringForEntity(Map<String, String> form, String charset, boolean urlEncode)的别名
+     * @param form
+     * @param charset
+     * @param urlEncode
+     * @return
+     */
+    public static String m2s(Map<String, String> form, String charset, boolean urlEncode) {
+        return serializeToStringForEntity(form, charset, urlEncode);
+    }
+
+    /**
      * 将formDate序列化为字节
-     * @param formDate
+     * @param formData
      * @param charset
      * @return
      */
-    public static byte[] serializeForEntity(String formDate, String charset) {
+    public static byte[] serializeForEntity(String formData, String charset) {
         try {
-            return formDate.getBytes(charset);
+            return formData.getBytes(charset);
         } catch (UnsupportedEncodingException e) {
             logger.error("", e);
         }
         return null;
+    }
+
+    /**
+     * serializeForEntity(String formData, String charset)的别名
+     * @param formData
+     * @param charset
+     * @return
+     */
+    public static byte[] s2b(String formData, String charset) {
+        return serializeForEntity(formData, charset);
     }
 
     /**
@@ -919,6 +951,17 @@ public class HttpClientUtil {
         }
 
         return serializeForEntity(JSONObject.toJSONString(data), charset);
+    }
+
+    /**
+     * serializeForEntity(Object data, String charset, boolean urlEncode)的别名
+     * @param data
+     * @param charset
+     * @param urlEncode
+     * @return
+     */
+    public static byte[] o2b(Object data, String charset, boolean urlEncode) {
+        return serializeForEntity(data, charset, urlEncode);
     }
 
     /**
