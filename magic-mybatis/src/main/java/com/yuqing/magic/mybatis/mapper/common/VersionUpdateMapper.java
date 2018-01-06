@@ -7,4 +7,7 @@ package com.yuqing.magic.mybatis.mapper.common;
  * @since 1.0.1
  */
 public interface VersionUpdateMapper {
+
+    int updateByVersion(Object object);
+
 }

@@ -8,5 +8,5 @@ package com.yuqing.magic.mybatis.mapper.common;
  */
 public interface DirtyUpdateMapper {
 
-    void updateByDirtySelective(Object object);
+    int updateByDirtySelective(Object object);
 }
