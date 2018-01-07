@@ -9,6 +9,8 @@ import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.plugin.*;
 import org.apache.ibatis.scripting.xmltags.DynamicSqlSource;
 import org.apache.ibatis.scripting.xmltags.SqlNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.InvocationTargetException;
@@ -27,6 +29,8 @@ import java.util.Properties;
         @Signature(type = Executor.class, method = "delete", args = {MappedStatement.class, Object.class})*/
 })
 public class MapperInterceptor implements Interceptor {
+
+    private static final Logger logger = LoggerFactory.getLogger(MapperInterceptor.class);
 
     private static final long PROVIDER_TYPE_OFFSET;
 
@@ -50,7 +54,6 @@ public class MapperInterceptor implements Interceptor {
         if (providerType != null && BaseProvider.class.isAssignableFrom(providerType)) {
             replaceSqlSource(ms, providerType, extractArgs(objects));
         }
-        String msId = ms.getId();
         return invocation.proceed();
     }
 
@@ -118,16 +121,20 @@ public class MapperInterceptor implements Interceptor {
                     + name + "(MappedStatement) not exists.");
         }
 
+        logger.debug("begin to replace sql source for " + providerType.getCanonicalName() + "." + m);
+
         SqlNode sqlNode = (SqlNode) m.invoke(providerType.newInstance(), mappedStatement, args);
 
         DynamicSqlSource dynamicSqlSource = new DynamicSqlSource(mappedStatement.getConfiguration(), sqlNode);
 
         setSqlSource(mappedStatement, dynamicSqlSource);
+
+        logger.debug("finished to replace sql source.");
     }
 
     private void setSqlSource(MappedStatement ms, DynamicSqlSource dynamicSqlSource) {
         boolean success = ((Unsafe) ReflectionUtil.getUnsafe()).compareAndSwapObject(ms, SQL_SOURCE_OFFSET, ms.getSqlSource(), dynamicSqlSource);
 
-
+        logger.debug("replace {}", success ? "success" : "failed");
     }
 }

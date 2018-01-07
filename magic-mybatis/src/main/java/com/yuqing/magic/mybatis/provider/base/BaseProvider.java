@@ -45,5 +45,4 @@ public class BaseProvider {
             return null;
         }
     }
-
 }

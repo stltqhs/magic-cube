@@ -7,6 +7,8 @@ import com.yuqing.magic.mybatis.proxy.EntityChangeHistoryProxy;
 import com.yuqing.magic.persistence.util.PersistenceUtil;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.scripting.xmltags.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -19,6 +21,8 @@ import java.util.*;
  * @since 1.0.1
  */
 public class DirtyUpdateProvider extends BaseProvider {
+
+    private static final Logger logger = LoggerFactory.getLogger(DirtyUpdateProvider.class);
 
     private static class MyMixedSqlNode extends MixedSqlNode {
 
@@ -53,6 +57,8 @@ public class DirtyUpdateProvider extends BaseProvider {
 
     public SqlNode updateByPrimaryKeyDirtySelective(MappedStatement ms, Object args[]) {
         Class entityClass = getEntityClass(ms);
+
+        logger.debug("create SqlNode for " + ms.getId());
 
         List<SqlNode> sqlNodeList = new LinkedList<>();
 
