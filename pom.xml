@@ -11,6 +11,8 @@
   <modules>
     <module>magic-common</module>
     <module>magic-mybatis</module>
+    <module>magic-proxy</module>
+    <module>magic-persistence</module>
   </modules>
 
   <build>

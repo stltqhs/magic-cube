@@ -4,9 +4,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.misc.Unsafe;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 反射帮助类
@@ -21,16 +24,14 @@ public class ReflectionUtil {
 
     public static final String SUN_MISC_UNSAFE = "sun.misc.Unsafe";
 
-    /**
-     * 获取Unsafe对象
-     * @return
-     */
-    public static Object getUnsafe() {
+    private static Object unsafe = null;
+
+    static {
         try {
             Field field = Class.forName(SUN_MISC_UNSAFE).getDeclaredField("theUnsafe");
             if (field != null) {
                 field.setAccessible(true);
-                return field.get(null);
+                unsafe = field.get(null);
             }
         } catch (NoSuchFieldException e) {
             logger.debug("", e);
@@ -39,8 +40,14 @@ public class ReflectionUtil {
         } catch (IllegalAccessException e) {
             logger.debug("", e);
         }
+    }
 
-        return null;
+    /**
+     * 获取Unsafe对象
+     * @return
+     */
+    public static Object getUnsafe() {
+        return unsafe;
     }
 
     /**
@@ -53,7 +60,7 @@ public class ReflectionUtil {
             Class.forName(name);
             return true;
         } catch (ClassNotFoundException e) {
-            logger.debug(name, e);
+//            logger.debug(name, e);
         }
         return false;
     }
@@ -73,11 +80,11 @@ public class ReflectionUtil {
             try {
                 field = self.getDeclaredField(fieldName);
             } catch (NoSuchFieldException e) {
-                logger.debug(fieldName, e);
+//                logger.debug(fieldName, e);
             }
 
             if (recursive && field == null) {
-                self = clazz.getSuperclass();
+                self = self.getSuperclass();
             } else {
                 break;
             }
@@ -161,11 +168,11 @@ public class ReflectionUtil {
             try {
                 method = self.getDeclaredMethod(methodName, args);
             } catch (NoSuchMethodException e) {
-                logger.debug(methodName, e);
+//                logger.debug(methodName, e);
             }
 
             if (recursive && method == null) {
-                self = clazz.getSuperclass();
+                self = self.getSuperclass();
             } else {
                 break;
             }
@@ -197,4 +204,24 @@ public class ReflectionUtil {
         return getOffset(clazz, getField(clazz, fieldName, false));
     }
 
+    /**
+     * 通过注解获取字段列表
+     * @param clazz
+     * @param annotation
+     * @return
+     */
+    public static List<Field> getField(Class clazz, Class annotation) {
+        Field[] fields = clazz.getDeclaredFields();
+
+        List<Field> list = new ArrayList<>(1);
+
+        for (Field field : fields) {
+            Annotation an = field.getAnnotation(annotation);
+            if (an != null) {
+                list.add(field);
+            }
+        }
+
+        return list;
+    }
 }

@@ -241,4 +241,44 @@ public class CommonUtil {
 
         return array;
     }
+
+    public static <T> T getLast(Collection<T> list) {
+        int length = lengthOf(list);
+
+        if (length == 0) {
+            return null;
+        }
+
+        if (list instanceof List) {
+            return (T) ((List) list).get(length - 1);
+        }
+
+        if (list instanceof Set) {
+            return (T) ((List) list).get(length - 1);
+        }
+
+        Object arr[] = list.toArray();
+
+        return (T) arr[length - 1];
+    }
+
+    public static <T> T getFirst(Collection<T> list) {
+        int length = lengthOf(list);
+
+        if (length == 0) {
+            return null;
+        }
+
+        if (list instanceof List) {
+            return (T) ((List) list).get(0);
+        }
+
+        if (list instanceof Set) {
+            return (T) ((List) list).get(0);
+        }
+
+        Object arr[] = list.toArray();
+
+        return (T) arr[0];
+    }
 }
