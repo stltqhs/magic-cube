@@ -9,6 +9,7 @@ import org.apache.commons.lang.mutable.MutableObject;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.scripting.xmltags.*;
+import org.apache.ibatis.session.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.misc.Unsafe;
@@ -27,15 +28,10 @@ import java.util.*;
 public class DirtyUpdateProvider extends BaseProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(DirtyUpdateProvider.class);
-    public static final String PARAMETER_META_OBJECT = "parameterMetaObject";
-    public static final String ORIGINAL_OBJECT = "originalObject";
-
-    private static volatile long ORIGINAL_OBJECT_OFFSET = -1;
-
-    private static volatile long META_OBJECT_OFFSET = -1;
 
     private static class MyMixedSqlNode extends MixedSqlNode {
 
+        private Configuration configuration = null;
 
         public static final String PARAMETER_NAME = "_parameter";
 
@@ -43,77 +39,41 @@ public class DirtyUpdateProvider extends BaseProvider {
             super(contents);
         }
 
+        public MyMixedSqlNode(List<SqlNode> contents, Configuration configuration) {
+            super(contents);
+            this.configuration = configuration;
+        }
+
         @Override
         public boolean apply(DynamicContext context) {
-            MutableObject oldValue = new MutableObject();
-            MutableObject newValue = new MutableObject();
 
-            replaceParameter(context, oldValue, newValue);
+            Object newValue = copyOf(context);
 
-            boolean a = super.apply(context);
+            if (newValue != null) {
+                DynamicContext tmp = new DynamicContext(configuration, newValue);
+                boolean a = super.apply(tmp);
 
-            resetParameter(context, oldValue, newValue);
+                if (a) {
+                    context.appendSql(tmp.getSql());
+                }
 
-            return a;
-        }
-
-        private void resetParameter(DynamicContext context,
-                                      MutableObject oldValue,
-                                      MutableObject newValue) {
-            try {
-                doResetParameter(context, oldValue, newValue);
-            } catch (IllegalAccessException e) {
-                logger.error("", e);
+                return a;
+            } else {
+                return super.apply(context);
             }
         }
 
-        private void doResetParameter(DynamicContext context,
-                                    MutableObject oldValue,
-                                    MutableObject newValue) throws IllegalAccessException {
-            if (logger.isDebugEnabled()) {
-                logger.debug("reset parameter from {} to {}", newValue.getValue(), oldValue.getValue());
-            }
+        private Object doCopyOf(DynamicContext context) throws IllegalAccessException, InstantiationException {
             Map<String, Object> bindings = context.getBindings();
             if (CommonUtil.isNullOrEmpty(bindings)) {
-                return;
-            }
-
-            if (oldValue.getValue() != null) {
-                bindings.put(PARAMETER_NAME, oldValue.getValue());
-            }
-
-            if (oldValue.getValue() != null && newValue.getValue() != null) {
-                replaceMetaObject(bindings, newValue.getValue(), oldValue.getValue());
-            }
-        }
-
-        private void replaceParameter(DynamicContext context,
-                                      MutableObject oldValue,
-                                      MutableObject newValue) {
-            try {
-                doReplaceParameter(context, oldValue, newValue);
-            } catch (IllegalAccessException e) {
-                logger.error("", e);
-            } catch (InstantiationException e) {
-                logger.error("", e);
-            }
-        }
-
-        private void doReplaceParameter(DynamicContext context,
-                                        MutableObject oldValue,
-                                        MutableObject newValue) throws IllegalAccessException, InstantiationException {
-            Map<String, Object> bindings = context.getBindings();
-            if (CommonUtil.isNullOrEmpty(bindings)) {
-                return;
+                return null;
             }
 
             Object parameter = bindings.get(PARAMETER_NAME);
 
             if (parameter == null) {
-                return;
+                return null;
             }
-
-            oldValue.setValue(parameter);
 
             EntityChangeHistoryProxy proxy = EntityChangeHistoryProxy.extract(parameter);
 
@@ -142,41 +102,20 @@ public class DirtyUpdateProvider extends BaseProvider {
                 item.getKey().set(newParameter, CommonUtil.getLast(item.getValue()));
             }
 
-            if (logger.isDebugEnabled()) {
-                logger.debug("set parameter from {} to {}", parameter, newParameter);
-            }
-            bindings.put(PARAMETER_NAME, newParameter);
-            newValue.setValue(newParameter);
-
-            replaceMetaObject(bindings, parameter, newParameter);
-        }
-    }
-
-    private static void replaceMetaObject(Map<String, Object> bindings, Object oldParameter, Object newParameter) throws IllegalAccessException {
-
-        if (META_OBJECT_OFFSET <= 0) {
-            Field field = ReflectionUtil.getField(bindings.getClass(), PARAMETER_META_OBJECT, false);
-            META_OBJECT_OFFSET = ReflectionUtil.getOffset(bindings.getClass(), field);
+            return newParameter;
         }
 
-        if (META_OBJECT_OFFSET > 0) {
-            MetaObject metaObject = (MetaObject) ((Unsafe) ReflectionUtil.getUnsafe()).getObject(bindings, META_OBJECT_OFFSET);
-
-            if (ORIGINAL_OBJECT_OFFSET <= 0) {
-                Field field = ReflectionUtil.getField(MetaObject.class, ORIGINAL_OBJECT, true);
-                if (field != null) {
-                    ORIGINAL_OBJECT_OFFSET = ReflectionUtil.getOffset(bindings.getClass(), field);
-                }
+        private Object copyOf(DynamicContext context) {
+            try {
+                return doCopyOf(context);
+            } catch (IllegalAccessException e) {
+                logger.error("", e);
+            } catch (InstantiationException e) {
+                logger.error("", e);
             }
 
-            if (ORIGINAL_OBJECT_OFFSET > 0) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("set meta object from {} to {}", oldParameter, newParameter);
-                }
-                ((Unsafe) ReflectionUtil.getUnsafe()).compareAndSwapObject(metaObject, ORIGINAL_OBJECT_OFFSET, oldParameter, newParameter);
-            }
+            return null;
         }
-
     }
 
     public String updateByPrimaryKeyDirtySelectiveSql(Object record) {
@@ -198,7 +137,7 @@ public class DirtyUpdateProvider extends BaseProvider {
 
         appendWhereSqlNode(sqlNodeList, entityClass, ms);
 
-        return new MyMixedSqlNode(sqlNodeList);
+        return new MyMixedSqlNode(sqlNodeList, ms.getConfiguration());
     }
 
     private void appendWhereSqlNode(List<SqlNode> sqlNodes, Class clazz,
