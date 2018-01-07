@@ -10,7 +10,7 @@
   <groupId>com.yuqing.magic</groupId>
   <artifactId>magic-mybatis</artifactId>
   <version>1.0.1</version>
-  <name>mybatis</name>
+  <name>magic-mybatis</name>
   <url>http://maven.apache.org</url>
 
   <dependencies>
@@ -39,6 +39,13 @@
       <version>1.0.1</version>
     </dependency>
 
+    <dependency>
+      <groupId>commons-beanutils</groupId>
+      <artifactId>commons-beanutils</artifactId>
+      <version>1.9.3</version>
+    </dependency>
+
+
     <!-- test -->
     <dependency>
       <groupId>junit</groupId>
@@ -51,6 +58,13 @@
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
       <version>1.4.196</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>tk.mybatis</groupId>
+      <artifactId>mapper</artifactId>
+      <version>3.1.2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

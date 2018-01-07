@@ -1,5 +1,7 @@
 package com.yuqing.magic.mybatis.entity;
 
+import com.yuqing.magic.mybatis.annotation.ProxyChangeHistory;
+
 import javax.persistence.Id;
 import javax.persistence.Table;
 import java.math.BigDecimal;
@@ -9,6 +11,7 @@ import java.util.Date;
  * Person实体类
  */
 @Table(name = "t_person")
+@ProxyChangeHistory
 public class Person {
 
     @Id

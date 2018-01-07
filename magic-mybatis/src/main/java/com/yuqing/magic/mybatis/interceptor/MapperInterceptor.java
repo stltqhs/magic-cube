@@ -1,20 +1,29 @@
 package com.yuqing.magic.mybatis.interceptor;
 
 import com.yuqing.magic.common.util.ReflectionUtil;
+import com.yuqing.magic.mybatis.annotation.ProxyChangeHistory;
 import com.yuqing.magic.mybatis.provider.base.BaseProvider;
+import com.yuqing.magic.mybatis.proxy.EntityChangeHistoryProxy;
+import com.yuqing.magic.mybatis.util.MybatisUtil;
 import org.apache.ibatis.builder.annotation.ProviderSqlSource;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.MappedStatement;
+import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.plugin.*;
 import org.apache.ibatis.scripting.xmltags.DynamicSqlSource;
 import org.apache.ibatis.scripting.xmltags.SqlNode;
+import org.apache.ibatis.session.ResultHandler;
+import org.apache.ibatis.session.RowBounds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.Properties;
 
 /**
@@ -23,7 +32,7 @@ import java.util.Properties;
  * @since 1.0.1
  */
 @Intercepts({
-//        @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
+        @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
         @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class})/*,
         @Signature(type = Executor.class, method = "insert", args = {MappedStatement.class, Object.class}),
         @Signature(type = Executor.class, method = "delete", args = {MappedStatement.class, Object.class})*/
@@ -32,6 +41,12 @@ public class MapperInterceptor implements Interceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(MapperInterceptor.class);
 
+    public static final String PROXY_WITH_DECLARE_ANNOTATION = "annotation";
+
+    public static final String PROXY_ALL = "all";
+
+    public static final String PROXY_DISABLE = "disable";
+
     private static final long PROVIDER_TYPE_OFFSET;
 
     private static final long PROVIDER_METHOD_OFFSET;
@@ -39,6 +54,8 @@ public class MapperInterceptor implements Interceptor {
     private static final long SQL_SOURCE_OFFSET;
 
     public static final String SQL_SUFFIX = "Sql";
+
+    private String resultProxy = PROXY_WITH_DECLARE_ANNOTATION;
 
     static {
         PROVIDER_TYPE_OFFSET = ReflectionUtil.getOffset(ProviderSqlSource.class, "providerType");
@@ -54,7 +71,12 @@ public class MapperInterceptor implements Interceptor {
         if (providerType != null && BaseProvider.class.isAssignableFrom(providerType)) {
             replaceSqlSource(ms, providerType, extractArgs(objects));
         }
-        return invocation.proceed();
+        Object result = invocation.proceed();
+        if (SqlCommandType.SELECT.equals(ms.getSqlCommandType())) {
+            result = replaceResult(result);
+        }
+
+        return result;
     }
 
     @Override
@@ -68,7 +90,16 @@ public class MapperInterceptor implements Interceptor {
 
     @Override
     public void setProperties(Properties properties) {
+        String rp = properties.getProperty("resultProxy");
 
+        if (PROXY_ALL.equals(rp)
+                || PROXY_WITH_DECLARE_ANNOTATION.equals(rp)
+                || PROXY_DISABLE.equals(rp)) {
+            logger.debug("set resultProxy to {}", rp);
+            resultProxy = rp;
+        } else {
+            logger.warn("try to set resultProxy but value is wrong.");
+        }
     }
 
     private Object[] extractArgs(Object[] params) {
@@ -136,5 +167,70 @@ public class MapperInterceptor implements Interceptor {
         boolean success = ((Unsafe) ReflectionUtil.getUnsafe()).compareAndSwapObject(ms, SQL_SOURCE_OFFSET, ms.getSqlSource(), dynamicSqlSource);
 
         logger.debug("replace {}", success ? "success" : "failed");
+    }
+
+    private Object replaceResult(Object result) throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        if (result == null) {
+            return result;
+        }
+        if (PROXY_DISABLE.equals(resultProxy)) { // 不支持代理
+            return result;
+        }
+
+        EntityChangeHistoryProxy historyProxy = EntityChangeHistoryProxy.extract(result);
+
+        if (historyProxy != null) {
+            historyProxy.getChangeHistory().clear();
+            logger.debug("result is EntityChangeHistoryProxy,clear its history.");
+            return result;
+        }
+
+        boolean isFinal = Modifier.isFinal(result.getClass().getModifiers());
+
+        if (isFinal) {
+            logger.debug(result.getClass().getCanonicalName() + " is final class, Can not proxy it.");
+            return result;
+        }
+
+        ProxyChangeHistory proxyChangeHistory = result.getClass().getAnnotation(ProxyChangeHistory.class);
+
+        logger.debug("{} find ProxyChangeHistory annotation for {}",
+                proxyChangeHistory != null ? "Has" : "Not", result.getClass());
+
+        if (proxyChangeHistory != null) {
+            return proxyResult(result);
+        }
+
+        if (PROXY_ALL.equals(resultProxy)) {
+            return proxyResult(result);
+        }
+
+        if (result instanceof Collection) {
+            return proxyResultForCollection((Collection) result);
+        }
+
+        return result;
+    }
+
+    private Object proxyResult(Object result) throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+        if (result instanceof Collection) {
+            result = proxyResultForCollection((Collection) result);
+        } else {
+            return MybatisUtil.proxyEntityChangeHistory(result);
+        }
+
+        return result;
+    }
+
+    private Object proxyResultForCollection(Collection result) throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        logger.debug("Encounter an Collection.Iterates its item.{}", result);
+        Iterator<Object> iterator = result.iterator();
+        Collection backup = (Collection) result.getClass().newInstance();
+        while (iterator.hasNext()) {
+            Object item = replaceResult(iterator.next());
+            backup.add(item);
+        }
+        result = backup;
+        return result;
     }
 }

@@ -4,7 +4,12 @@
         "http://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
     <plugins>
-        <plugin interceptor="com.yuqing.magic.mybatis.interceptor.MapperInterceptor"></plugin>
+        <plugin interceptor="tk.mybatis.mapper.mapperhelper.MapperInterceptor">
+            <property name="mappers" value="tk.mybatis.mapper.common.Mapper" />
+        </plugin>
+        <plugin interceptor="com.yuqing.magic.mybatis.interceptor.MapperInterceptor">
+
+        </plugin>
     </plugins>
     <environments default="development">
         <environment id="development">
