@@ -5,18 +5,18 @@ import com.yuqing.magic.common.util.ReflectionUtil;
 import com.yuqing.magic.mybatis.provider.base.BaseProvider;
 import com.yuqing.magic.mybatis.proxy.EntityChangeHistoryProxy;
 import com.yuqing.magic.persistence.util.PersistenceUtil;
-import org.apache.commons.lang.mutable.MutableObject;
 import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.scripting.xmltags.*;
 import org.apache.ibatis.session.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.Unsafe;
 
 import javax.persistence.Id;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 脏值更新sql提供类
