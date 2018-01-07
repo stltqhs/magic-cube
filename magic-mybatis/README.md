@@ -10,7 +10,7 @@
 实体类
 ```
 @Table("table")
-@ProxyChangeHistory
+@ProxyChangeHistory // 支持脏值更新
 public class Person {
 // fields
 // getter/setter
@@ -28,3 +28,6 @@ public void setName(String name) {
 查询之后只更新name字段
 ```
 Person person = sqlSession.selectOne(name, parameter);
+person.setName("new name");
+sqlSession.update("updateByPrimaryKeyDirtySelective", person); // 只更新name字段
+```
