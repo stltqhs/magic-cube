@@ -69,7 +69,7 @@ public class MapperInterceptor implements Interceptor {
         MappedStatement ms = (MappedStatement) objects[0];
         Class<?> providerType = getProviderType(ms.getSqlSource());
         if (providerType != null && BaseProvider.class.isAssignableFrom(providerType)) {
-            replaceSqlSource(ms, providerType, extractArgs(objects));
+            replaceSqlSource(ms, providerType);
         }
         Object result = invocation.proceed();
         if (SqlCommandType.SELECT.equals(ms.getSqlCommandType())) {
@@ -95,27 +95,13 @@ public class MapperInterceptor implements Interceptor {
         if (PROXY_ALL.equals(rp)
                 || PROXY_WITH_DECLARE_ANNOTATION.equals(rp)
                 || PROXY_DISABLE.equals(rp)) {
-            logger.debug("set resultProxy to {}", rp);
+            if (logger.isDebugEnabled()) {
+                logger.debug("set resultProxy to {}", rp);
+            }
             resultProxy = rp;
         } else {
             logger.warn("try to set resultProxy but value is wrong.");
         }
-    }
-
-    private Object[] extractArgs(Object[] params) {
-        if (params == null) {
-            return params;
-        }
-
-        if (params.length == 1) {
-            return null;
-        }
-
-        Object[] args = new Object[params.length - 1];
-        for (int i = 1; i < params.length; i++) {
-            args[i - 1] = params[i];
-        }
-        return args;
     }
 
     private Class getProviderType(SqlSource sqlSource) {
@@ -138,35 +124,41 @@ public class MapperInterceptor implements Interceptor {
     }
 
 
-    private void replaceSqlSource(MappedStatement mappedStatement, Class providerType, Object args[]) throws IllegalAccessException, InstantiationException, InvocationTargetException {
+    private void replaceSqlSource(MappedStatement mappedStatement, Class providerType) throws IllegalAccessException, InstantiationException, InvocationTargetException {
         Method providerMethod = getProviderMethod(mappedStatement.getSqlSource());
 
         if (!providerMethod.getName().endsWith(SQL_SUFFIX)) {
             return;
         }
         String name = providerMethod.getName().substring(0, providerMethod.getName().length() - SQL_SUFFIX.length());
-        Method m = ReflectionUtil.getMethod(providerType, name, new Class[]{MappedStatement.class, Object[].class}, false);
+        Method m = ReflectionUtil.getMethod(providerType, name, new Class[]{MappedStatement.class}, false);
 
         if (m == null) {
             throw new IllegalArgumentException(providerType.getClass().getCanonicalName() + "."
                     + name + "(MappedStatement) not exists.");
         }
 
-        logger.debug("begin to replace sql source for " + providerType.getCanonicalName() + "." + m);
+        if (logger.isDebugEnabled()) {
+            logger.debug("begin to replace sql source for " + providerType.getCanonicalName() + "." + m);
+        }
 
-        SqlNode sqlNode = (SqlNode) m.invoke(providerType.newInstance(), mappedStatement, args);
+        SqlNode sqlNode = (SqlNode) m.invoke(providerType.newInstance(), mappedStatement);
 
         DynamicSqlSource dynamicSqlSource = new DynamicSqlSource(mappedStatement.getConfiguration(), sqlNode);
 
         setSqlSource(mappedStatement, dynamicSqlSource);
 
-        logger.debug("finished to replace sql source.");
+        if (logger.isDebugEnabled()) {
+            logger.debug("finished to replace sql source.");
+        }
     }
 
     private void setSqlSource(MappedStatement ms, DynamicSqlSource dynamicSqlSource) {
         boolean success = ((Unsafe) ReflectionUtil.getUnsafe()).compareAndSwapObject(ms, SQL_SOURCE_OFFSET, ms.getSqlSource(), dynamicSqlSource);
 
-        logger.debug("replace {}", success ? "success" : "failed");
+        if (logger.isDebugEnabled()) {
+            logger.debug("replace {}", success ? "success" : "failed");
+        }
     }
 
     private Object replaceResult(Object result) throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
@@ -181,7 +173,9 @@ public class MapperInterceptor implements Interceptor {
 
         if (historyProxy != null) {
             historyProxy.getChangeHistory().clear();
-            logger.debug("result is EntityChangeHistoryProxy,clear its history.");
+            if (logger.isDebugEnabled()) {
+                logger.debug("result is EntityChangeHistoryProxy,clear its history.");
+            }
             return result;
         }
 
@@ -194,8 +188,10 @@ public class MapperInterceptor implements Interceptor {
 
         ProxyChangeHistory proxyChangeHistory = result.getClass().getAnnotation(ProxyChangeHistory.class);
 
-        logger.debug("{} find ProxyChangeHistory annotation for {}",
-                proxyChangeHistory != null ? "Has" : "Not", result.getClass());
+        if (logger.isDebugEnabled()) {
+            logger.debug("{} find ProxyChangeHistory annotation for {}",
+                    proxyChangeHistory != null ? "Has" : "Not", result.getClass());
+        }
 
         if (proxyChangeHistory != null) {
             return proxyResult(result);
@@ -223,7 +219,9 @@ public class MapperInterceptor implements Interceptor {
     }
 
     private Object proxyResultForCollection(Collection result) throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-        logger.debug("Encounter an Collection.Iterates its item.{}", result);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Encounter an Collection.Iterates its item.{}", result);
+        }
         Iterator<Object> iterator = result.iterator();
         Collection backup = (Collection) result.getClass().newInstance();
         while (iterator.hasNext()) {

@@ -88,7 +88,9 @@ public class HttpClientUtil {
                 hOffset = ReflectionUtil.getOffset(Proxy.class, "h");
             }
         } catch (Exception e) {
-            logger.debug("", e);
+            if (logger.isDebugEnabled()) {
+                logger.debug("", e);
+            }
             hasUnsafeClass = false;
         }
     }
@@ -577,9 +579,13 @@ public class HttpClientUtil {
                     }
                 }
             } catch (NoSuchFieldException e) {
-                logger.debug("", e);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("", e);
+                }
             } catch (IllegalAccessException e) {
-                logger.debug("", e);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("", e);
+                }
             }
         }
 

@@ -34,11 +34,17 @@ public class ReflectionUtil {
                 unsafe = field.get(null);
             }
         } catch (NoSuchFieldException e) {
-            logger.debug("", e);
+            if (logger.isDebugEnabled()) {
+                logger.debug("", e);
+            }
         } catch (ClassNotFoundException e) {
-            logger.debug("", e);
+            if (logger.isDebugEnabled()) {
+                logger.debug("", e);
+            }
         } catch (IllegalAccessException e) {
-            logger.debug("", e);
+            if (logger.isDebugEnabled()) {
+                logger.debug("", e);
+            }
         }
     }
 
@@ -60,7 +66,9 @@ public class ReflectionUtil {
             Class.forName(name);
             return true;
         } catch (ClassNotFoundException e) {
+//            if (logger.isDebugEnabled()) {
 //            logger.debug(name, e);
+//            }
         }
         return false;
     }
@@ -80,7 +88,9 @@ public class ReflectionUtil {
             try {
                 field = self.getDeclaredField(fieldName);
             } catch (NoSuchFieldException e) {
+//                if (logger.isDebugEnabled()) {
 //                logger.debug(fieldName, e);
+//                }
             }
 
             if (recursive && field == null) {
@@ -168,7 +178,9 @@ public class ReflectionUtil {
             try {
                 method = self.getDeclaredMethod(methodName, args);
             } catch (NoSuchMethodException e) {
+//                if (logger.isDebugEnabled()) {
 //                logger.debug(methodName, e);
+//                }
             }
 
             if (recursive && method == null) {

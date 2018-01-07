@@ -32,7 +32,7 @@ public class EntityChangeHistoryProxy implements MethodInterceptor {
     private Object target;
 
     @Transient
-    private Map<String, List<?>> changeHistory = new ConcurrentHashMap<>();
+    private Map<Field, List<?>> changeHistory = new ConcurrentHashMap<>();
 
     public EntityChangeHistoryProxy(Object target) {
         this.target = target;
@@ -46,20 +46,22 @@ public class EntityChangeHistoryProxy implements MethodInterceptor {
             if (field != null) {
                 Id id = field.getAnnotation(Id.class);
                 if (id == null) {
-                    List his = changeHistory.get(field.getName());
+                    List his = changeHistory.get(field);
                     if (his == null) {
                         his = new ArrayList<>(3);
 
                         Object fieldValue = getFieldValue(obj, method);
                         his.add(fieldValue);
 
-                        changeHistory.put(field.getName(), his);
+                        changeHistory.put(field, his);
                     }
 
                     his.add(args[0]);
                 }
             } else {
-                logger.debug("Can not infer field name from " + obj.getClass() + "." + method.getName());
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Can not infer field name from " + obj.getClass() + "." + method.getName());
+                }
             }
         }
         return methodProxy.invokeSuper(obj, args);
@@ -121,7 +123,7 @@ public class EntityChangeHistoryProxy implements MethodInterceptor {
         return null;
     }
 
-    public Map<String, List<?>> getChangeHistory() {
+    public Map<Field, List<?>> getChangeHistory() {
         return changeHistory;
     }
 
