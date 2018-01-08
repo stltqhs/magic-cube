@@ -44,8 +44,22 @@ public class EntityChangeHistoryProxy implements MethodInterceptor {
             Field field = getField(obj, method);
 
             if (field != null) {
+                boolean record = true;
+                // 主键不需要记录
                 Id id = field.getAnnotation(Id.class);
-                if (id == null) {
+                if (id != null) {
+                    record = false;
+                }
+
+                // @Transient标记的字段不需要记录
+                if (record) {
+                    Transient transientAnno = field.getAnnotation(Transient.class);
+                    if (transientAnno != null) {
+                        record  = false;
+                    }
+                }
+                // 记录
+                if (record) {
                     List his = changeHistory.get(field);
                     if (his == null) {
                         his = new ArrayList<>(3);
