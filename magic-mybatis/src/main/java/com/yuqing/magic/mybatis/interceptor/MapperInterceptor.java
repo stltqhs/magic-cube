@@ -1,10 +1,12 @@
 package com.yuqing.magic.mybatis.interceptor;
 
+import com.yuqing.magic.common.util.NumberUtil;
 import com.yuqing.magic.common.util.ReflectionUtil;
 import com.yuqing.magic.mybatis.annotation.ProxyChangeHistory;
 import com.yuqing.magic.mybatis.provider.base.BaseProvider;
 import com.yuqing.magic.mybatis.proxy.EntityChangeHistoryProxy;
 import com.yuqing.magic.mybatis.util.MybatisUtil;
+import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.builder.annotation.ProviderSqlSource;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.MappedStatement;
@@ -55,7 +57,15 @@ public class MapperInterceptor implements Interceptor {
 
     public static final String SQL_SUFFIX = "Sql";
 
+    /**
+     * 代理结果集的控制，默认为当结果集中的实体存在@ProxyChangeHistory注解时才代理
+     */
     private String resultProxy = PROXY_WITH_DECLARE_ANNOTATION;
+
+    /**
+     * 代理结果集的控制，默认为当返回的结果集数量为1时才代理
+     */
+    private int resultSizeProxy = 1;
 
     static {
         PROVIDER_TYPE_OFFSET = ReflectionUtil.getOffset(ProviderSqlSource.class, "providerType");
@@ -90,6 +100,27 @@ public class MapperInterceptor implements Interceptor {
 
     @Override
     public void setProperties(Properties properties) {
+        setResultProxyProperty(properties);
+
+        setResultSizeProxyProperty(properties);
+    }
+
+    private void setResultSizeProxyProperty(Properties properties) {
+        String resultSize = properties.getProperty("resultSizeProxy");
+        boolean rsEmpty = StringUtils.isBlank(resultSize);
+        boolean rsNumber = NumberUtil.isNumber(resultSize);
+        if (!rsEmpty && rsNumber) {
+            int rs = NumberUtil.safeParseInteger(resultSize, 1);
+            if (logger.isDebugEnabled()) {
+                logger.debug("set resultSizeProxy to {}", rs);
+            }
+            resultSizeProxy = rs;
+        } else if (!rsEmpty && !rsNumber) {
+            logger.warn("try to set resultSizeProxy to {} but value is wrong.", resultSize);
+        }
+    }
+
+    private void setResultProxyProperty(Properties properties) {
         String rp = properties.getProperty("resultProxy");
 
         if (PROXY_ALL.equals(rp)
@@ -100,7 +131,7 @@ public class MapperInterceptor implements Interceptor {
             }
             resultProxy = rp;
         } else {
-            logger.warn("try to set resultProxy but value is wrong.");
+            logger.warn("try to set resultProxy to {} but value is wrong.", rp);
         }
     }
 
@@ -219,8 +250,18 @@ public class MapperInterceptor implements Interceptor {
     }
 
     private Object proxyResultForCollection(Collection result) throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        if (result == null) {
+            return result;
+        }
         if (logger.isDebugEnabled()) {
-            logger.debug("Encounter an Collection.Iterates its item.{}", result);
+            logger.debug("Encounter an Collection.Iterates its item.size={}", result.size());
+        }
+        if (result.size() > resultSizeProxy) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Collection.size={} is bigger than resultSizeProxy={},ignore this result.",
+                        result.size(), resultSizeProxy);
+            }
+            return result;
         }
         Iterator<Object> iterator = result.iterator();
         Collection backup = (Collection) result.getClass().newInstance();
