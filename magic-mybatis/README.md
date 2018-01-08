@@ -4,7 +4,13 @@
 ### 配置
 在mybatis文件中添加拦截器
 ```
-<plugin interceptor="com.yuqing.magic.mybatis.interceptor.MapperInterceptor"></plugin>
+<plugin interceptor="com.yuqing.magic.mybatis.interceptor.MapperInterceptor">
+    <!-- 当实体被@ProxyChangeHistory标记时才支持 -->
+    <property name="resultProxy" value="annotation" />
+
+    <!-- 当返回的结果集数量为1时才支持 -->
+    <property name="resultSizeProxy" value="1" />
+</plugin>
 ```
 ### 脏值更新
 实体类
