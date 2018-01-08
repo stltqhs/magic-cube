@@ -12,17 +12,25 @@
 @Table("table")
 @ProxyChangeHistory // 支持脏值更新
 public class Person {
-// fields
-// getter/setter
-private String name;
+    // fields
+    // getter/setter
+    private String name;
+    private Integer age;
 
-public String getName() {
-    return name;
-}
+    public String getName() {
+        return name;
+    }
 
-public void setName(String name) {
-    this.name = name;
-}
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+    public void setAge(Integer age) {
+        this.age = age;
+    }
 }
 ```
 查询之后只更新name字段
