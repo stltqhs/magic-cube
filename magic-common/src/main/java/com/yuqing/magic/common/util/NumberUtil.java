@@ -102,14 +102,6 @@ public class NumberUtil {
         return round(bigDecimal, scale, BigDecimal.ROUND_HALF_UP);
     }
 
-    public static BigDecimal roundEnergy(BigDecimal bigDecimal) {
-        return roundEnergy(bigDecimal, 0);
-    }
-
-    public static BigDecimal roundEnergy(BigDecimal bigDecimal, int scale) {
-        return round(bigDecimal, scale, BigDecimal.ROUND_HALF_UP);
-    }
-
     public static BigDecimal round(BigDecimal bigDecimal, int scale, int type) {
         return bigDecimal.setScale(scale, type);
     }
