@@ -239,6 +239,7 @@ public class HttpClientUtil {
                     try {
                         wrapResponseEntity(result);
                         result = proxyHttpResponse(null, result, HttpResponse.class);
+                        args[0] = result;
 
                         HttpResponseHandler handler = getHttpResponseHandler(result);
                         if (handler != null) handler.setStartTime(start);
