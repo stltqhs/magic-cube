@@ -78,8 +78,8 @@ public class Person {
         this.gender = gender;
     }
 }
-使用方法
 ```
+使用方法
 Person person = sqlSession.selectOne(name, parameter);
 person.setAge(30); // 假设查询出来时age值为20
 // 下面的更新方式的where条件是 where id = #{id} and age = #{oldAge}
