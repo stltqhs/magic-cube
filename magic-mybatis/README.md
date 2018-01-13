@@ -137,5 +137,5 @@ sqlSession.update("updateByPrimaryKeySelective");
 // 改写money更新字段
 MybatisUtil.change("money", "money = money + ");
 // 如果执行更新操作，set子句为set money = money + #{money}，假设name字段为主键
-sqlSession.update("updateByPrimaryKeySelective");
+sqlSession.update("updateByPrimaryKeySelective", p);
 ```
