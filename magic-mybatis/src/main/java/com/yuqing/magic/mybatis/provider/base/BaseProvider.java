@@ -8,6 +8,8 @@ import java.lang.reflect.Type;
 
 /**
  * 通用SQL提供类
+ *
+ * 如果需要扩展Mapper，Mapper的提供器需要继承该类
  * @author yuqing
  *
  * @since 1.0.1

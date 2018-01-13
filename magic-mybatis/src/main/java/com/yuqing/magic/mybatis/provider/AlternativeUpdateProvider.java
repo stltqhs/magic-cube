@@ -135,7 +135,7 @@ public class AlternativeUpdateProvider extends BaseProvider {
 
         sqlNodeList.add(MybatisUtil.buildUpdateTableSqlNode(entityClass));
 
-        MybatisUtil.appendSelectiveSetSqlNode(sqlNodeList, entityClass, ms, null);
+        MybatisUtil.appendSelectiveSetSqlNode(sqlNodeList, entityClass, ms, null, false);
 
         MybatisUtil.appendPrimaryKeyWhereSqlNode(sqlNodeList, entityClass, ms, null);
 

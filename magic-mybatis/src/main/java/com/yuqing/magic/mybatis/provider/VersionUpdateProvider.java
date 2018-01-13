@@ -304,7 +304,7 @@ public class VersionUpdateProvider extends BaseProvider {
 
         sqlNodeList.add(MybatisUtil.buildUpdateTableSqlNode(entityClass));
 
-        MybatisUtil.appendSelectiveSetSqlNode(sqlNodeList, entityClass, ms, "entity.");
+        MybatisUtil.appendSelectiveSetSqlNode(sqlNodeList, entityClass, ms, "entity.", false);
 
         MybatisUtil.appendPrimaryKeyAndVersionWhereSqlNode(sqlNodeList, entityClass, ms, "old.");
 

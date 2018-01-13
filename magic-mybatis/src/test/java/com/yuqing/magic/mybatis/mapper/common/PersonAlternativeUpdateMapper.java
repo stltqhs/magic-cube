@@ -11,5 +11,6 @@ import tk.mybatis.mapper.common.Mapper;
 public interface PersonAlternativeUpdateMapper
         extends AlternativeUpdateMapper<Person>,
         Mapper<Person>,
-        VersionUpdateMapper<Person>{
+        VersionUpdateMapper<Person>,
+        InsertOnDuplicateKeyUpdateMapper<Person> {
 }

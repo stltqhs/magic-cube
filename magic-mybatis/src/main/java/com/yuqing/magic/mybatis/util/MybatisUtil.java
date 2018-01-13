@@ -32,6 +32,8 @@ public class MybatisUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(MybatisUtil.class);
 
+    private static final ThreadLocal<Object> JUST_RETURN_LOCAL = new ThreadLocal<>();
+
     /**
      * 通过msId获取接口类
      * @param msId
@@ -79,6 +81,59 @@ public class MybatisUtil {
         sqlNodes.add(new WhereSqlNode(ms.getConfiguration(), new MixedSqlNode(whereNodes)));
     }
 
+    public static void appendInsertColumnSqlNode(List<SqlNode> sqlNodes, Class clazz,
+                                                 MappedStatement ms, boolean selective) {
+
+        StringBuilder cols = new StringBuilder();
+        List<SqlNode> subSqlNodes = new LinkedList<>();
+
+        Field[] fields = clazz.getDeclaredFields();
+
+        for (Field field : fields) {
+            if (MybatisUtil.isTransient(field)) {
+                continue;
+            }
+            if (selective) {
+                addCheckIfTest(subSqlNodes, field, new StaticTextSqlNode("," + PersistenceUtil.getColumnName(field)), null);
+            } else {
+                cols.append("," + PersistenceUtil.getColumnName(field));
+            }
+        }
+
+        if (!selective) {
+            subSqlNodes.add(new StaticTextSqlNode(cols.toString()));
+        }
+
+        sqlNodes.add(new TrimSqlNode(ms.getConfiguration(),
+                new MixedSqlNode(subSqlNodes), "(", ",", ")", ""));
+    }
+
+    public static void appendValuesSqlNode(List<SqlNode> sqlNodes, Class clazz,
+                                           MappedStatement ms, String accessPrefix, boolean selective) {
+        Field[] fields = clazz.getDeclaredFields();
+
+        List<SqlNode> subSqlNodes = new LinkedList<>();
+        StringBuilder cols = new StringBuilder();
+
+        for (Field field : fields) {
+            if (MybatisUtil.isTransient(field)) {
+                continue;
+            }
+            if (selective) {
+                addCheckIfTest(subSqlNodes, field, new StaticTextSqlNode("," + buildBindFieldText(field, accessPrefix)), null);
+            } else {
+                cols.append("," + buildBindFieldText(field, accessPrefix));
+            }
+        }
+
+        if (!selective) {
+            subSqlNodes.add(new StaticTextSqlNode(cols.toString()));
+        }
+
+        sqlNodes.add(new TrimSqlNode(ms.getConfiguration(),
+                new MixedSqlNode(subSqlNodes), "VALUES(", ",", ")", ""));
+    }
+
     public static void appendPrimaryKeyAndVersionWhereSqlNode(List<SqlNode> sqlNodes, Class clazz,
                                                     MappedStatement ms, String accessPrefix) {
 
@@ -93,9 +148,8 @@ public class MybatisUtil {
                 continue;
             }
             StaticTextSqlNode columnNode = new StaticTextSqlNode(
-                    " AND " +
-                            PersistenceUtil.getColumnName(field) + " = #{"
-                            + getAccessNameWithPrefix(field.getName(), accessPrefix) + "}");
+                    " AND " + buildColumnEqualsText(field, accessPrefix)
+                            );
 
             ChooseSqlNode chooseSqlNode = new ChooseSqlNode((List) Arrays.asList(
                     new IfSqlNode(columnNode, getAccessNameWithPrefix(field.getName(), accessPrefix) + " != null")),
@@ -107,40 +161,40 @@ public class MybatisUtil {
         sqlNodes.add(new WhereSqlNode(ms.getConfiguration(), new MixedSqlNode(whereNodes)));
     }
 
+    private static String buildColumnEqualsText(Field field, String accessPrefix) {
+        return PersistenceUtil.getColumnName(field) + " = " + buildBindFieldText(field, accessPrefix);
+    }
+
+    private static String buildBindFieldText(Field field, String accessPrefix) {
+        return "#{"
+                + getAccessNameWithPrefix(field.getName(), accessPrefix) + "}";
+    }
+
     public static boolean isId(Field field) {
-        Id id = field.getAnnotation(Id.class);
-        if (id != null) {
-            return true;
-        }
-        return false;
+        return PersistenceUtil.isId(field);
     }
 
     public static boolean isTransient(Field field) {
-        Transient transientAnno = field.getAnnotation(Transient.class);
-        if (transientAnno != null) {
-            return true;
-        }
-        return false;
+        return PersistenceUtil.isTransient(field);
     }
 
-    private static void populatePrimaryKeyWhereSqlNode(Class clazz, List<SqlNode> whereNodes, String acessPrefix) {
+    private static void populatePrimaryKeyWhereSqlNode(Class clazz, List<SqlNode> whereNodes, String accessPrefix) {
         List<Field> fields = PersistenceUtil.getIdFields(clazz);
 
         if (!CommonUtil.isNullOrEmpty(fields)) {
             String p = "";
             for (Field field : fields) {
-                String column = PersistenceUtil.getColumnName(field);
-                whereNodes.add(new StaticTextSqlNode(p + column + " = #{"
-                        + getFieldNameWithPrefix(field, acessPrefix) + "}"));
+                whereNodes.add(new StaticTextSqlNode(p + buildColumnEqualsText(field, accessPrefix)));
 
                 p = " AND ";
             }
         }
     }
 
-    public static void appendSelectiveSetSqlNode(List<SqlNode> sqlNodes, Class clazz,
-                                  MappedStatement ms, String accesPrefix) {
-
+    public static void appendSetSqlNode(List<SqlNode> sqlNodes, Class clazz,
+                                                 MappedStatement ms, String accessPrefix,
+                                        boolean selective,
+                                        boolean trimSet) {
         List<SqlNode> ifNodes = new LinkedList<>();
 
         Field[] fields = clazz.getDeclaredFields();
@@ -150,21 +204,47 @@ public class MybatisUtil {
                 continue;
             }
             StaticTextSqlNode columnNode = new StaticTextSqlNode(
-                    PersistenceUtil.getColumnName(field) + " = #{"
-                            + getFieldNameWithPrefix(field, accesPrefix) + "}, ");
+                    buildColumnEqualsText(field, accessPrefix) + ",");
 
-            if (field.getType().equals(String.class)) {
-                ifNodes.add(new IfSqlNode(columnNode,
-                        getFieldNameWithPrefix(field, accesPrefix)
-                                + " != null and "
-                                + getFieldNameWithPrefix(field, accesPrefix)
-                                + ".trim().length() != 0"));
+            if (selective) {
+                addCheckIfTest(ifNodes, field, columnNode, accessPrefix);
             } else {
-                ifNodes.add(new IfSqlNode(columnNode, getFieldNameWithPrefix(field, accesPrefix) + " != null"));
+                ifNodes.add(columnNode);
             }
         }
 
-        sqlNodes.add(new SetSqlNode(ms.getConfiguration(), new MixedSqlNode(ifNodes)));
+        SqlNode sn = new SetSqlNode(ms.getConfiguration(), new MixedSqlNode(ifNodes));
+        if (trimSet) {
+            sn = new TrimSqlNode(ms.getConfiguration(), sn, "", "SET", "", "");
+        }
+        sqlNodes.add(sn);
+    }
+
+    private static void addCheckIfTest(List<SqlNode> ifNodes, Field field, SqlNode sqlNode, String accessPrefix) {
+        String test;
+        if (field.getType().equals(String.class)) {
+            test = buildCheckEmptyIfTest(accessPrefix, field);
+        } else {
+            test = buildCheckNullIfTest(accessPrefix, field);
+        }
+        ifNodes.add(new IfSqlNode(sqlNode, test));
+    }
+
+    private static String buildCheckNullIfTest(String accessPrefix, Field field) {
+        return getFieldNameWithPrefix(field, accessPrefix) + " != null";
+    }
+
+    private static String buildCheckEmptyIfTest(String accessPrefix, Field field) {
+        return getFieldNameWithPrefix(field, accessPrefix)
+                + " != null and "
+                + getFieldNameWithPrefix(field, accessPrefix)
+                + ".trim().length() != 0";
+    }
+
+    public static void appendSelectiveSetSqlNode(List<SqlNode> sqlNodes, Class clazz,
+                                  MappedStatement ms, String accessPrefix, boolean trimSet) {
+
+        appendSetSqlNode(sqlNodes, clazz, ms, accessPrefix, true, trimSet);
     }
 
     private static String getFieldNameWithPrefix(Field field, String prefix) {
@@ -197,4 +277,19 @@ public class MybatisUtil {
         return null;
     }
 
+    public static void justReturn(Object sqlReturn) {
+        JUST_RETURN_LOCAL.set(sqlReturn);
+    }
+
+    public static boolean hasJustReturn() {
+        return JUST_RETURN_LOCAL.get() != null;
+    }
+
+    public static void clearJustReturn() {
+        JUST_RETURN_LOCAL.set(null);
+    }
+
+    public static Object getJustReturn() {
+        return JUST_RETURN_LOCAL.get();
+    }
 }

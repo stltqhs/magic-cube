@@ -5,6 +5,7 @@ import com.yuqing.magic.common.util.ReflectionUtil;
 import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import java.lang.reflect.Field;
 import java.util.List;
 
@@ -49,5 +50,21 @@ public class PersistenceUtil {
 
     public static List<Field> getIdFields(Class clazz) {
         return ReflectionUtil.getField(clazz, Id.class);
+    }
+
+    public static boolean isId(Field field) {
+        Id id = field.getAnnotation(Id.class);
+        if (id != null) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isTransient(Field field) {
+        Transient transientAnno = field.getAnnotation(Transient.class);
+        if (transientAnno != null) {
+            return true;
+        }
+        return false;
     }
 }

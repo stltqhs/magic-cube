@@ -32,6 +32,8 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 
 /**
+ * 处理基于{@link BaseProvider}的Mapper和工具类设置
+ *
  * @author yuqing
  *
  * @since 1.0.1
@@ -58,8 +60,6 @@ public class MapperInterceptor implements Interceptor {
 
     private static final long SQL_SOURCE_OFFSET;
 
-    private static final long CONFIGURATION_OFFSET;
-
     public static final String SQL_SUFFIX = "Sql";
 
     /**
@@ -76,7 +76,6 @@ public class MapperInterceptor implements Interceptor {
         PROVIDER_TYPE_OFFSET = ReflectionUtil.getOffset(ProviderSqlSource.class, "providerType");
         PROVIDER_METHOD_OFFSET = ReflectionUtil.getOffset(ProviderSqlSource.class, "providerMethod");
         SQL_SOURCE_OFFSET = ReflectionUtil.getOffset(MappedStatement.class, "sqlSource");
-        CONFIGURATION_OFFSET = ReflectionUtil.getOffset(DefaultParameterHandler.class, "configuration");
     }
 
     @Override
@@ -86,6 +85,12 @@ public class MapperInterceptor implements Interceptor {
         Class<?> providerType = getProviderType(ms.getSqlSource());
         if (providerType != null && BaseProvider.class.isAssignableFrom(providerType)) {
             replaceSqlSource(ms, providerType);
+        }
+
+        if (MybatisUtil.hasJustReturn()) {
+            Object jt = MybatisUtil.getJustReturn();
+            MybatisUtil.clearJustReturn();
+            return jt;
         }
         Object result = invocation.proceed();
         if (SqlCommandType.SELECT.equals(ms.getSqlCommandType())) {
