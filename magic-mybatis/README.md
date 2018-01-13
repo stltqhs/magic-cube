@@ -135,7 +135,7 @@ sqlSession.update("insertOnDuplicateKeyUpdate", person);
 ```
 
 ### 工具类型使用
-- 改写<code>set</code>子句
+- 改写<code>set</code>子句（未实现）
 ```
 Person p = new Person();
 p.setMoney(2.5);
@@ -149,7 +149,7 @@ MybatisUtil.change("money", "money = money + ");
 // 如果执行更新操作，set子句为set money = money + #{money}，假设name字段为主键
 sqlSession.update("updateByPrimaryKeySelective", p);
 ```
-- 加行锁（只支持MYSQL且只对INNODB表有效）
+- 加行锁（只支持MYSQL且只对INNODB表有效）（未实现）
 ```
 MybatisUtil.lockForUpdate(); // 在select后面加上for update
 Person person = sqlSession.selectOne(name, parameter); // name这一行将会被锁在
