@@ -102,7 +102,7 @@ person.setAge(30); // 假设查询出来时age值为20
 person.setName("new name");
 person.setGender("male");
 // 下面的更新方式的where条件是 where id = #{id} and age = #{oldAge}
-sqlSession.update("updateByPrimaryVersionSelective", person, "-name,-gender");
+sqlSession.update("updateByPrimaryVersionSelective", new Object[]{person, "-name,-gender"});
 ```
 <code>updateByPrimaryVersionAlternative(Object entity, String version)</code>中的<code>version</code>可以指定版本字段。
 “-”表示忽略一个版本字段，“+”表示增加一个版本字段。
@@ -122,10 +122,11 @@ person.setName("new name"); // 假设查询出来时name值为old name
 
 // 只更新age和name字段，且where条件子句是 where id=#{id} and age = #{oldAge} and name = #{oldName}
 // 其中oldAge为20，oldName为old name
-sqlSession.update("updateByPrimaryVersionAlternative", person, null);
+sqlSession.update("updateByPrimaryVersionAlternative", new Object[]{person, null});
 ```
+### INSERT
 ### 工具类型使用
-改写<code>set</code>字句
+- 改写<code>set</code>子句
 ```
 Person p = new Person();
 p.setMoney(2.5);
@@ -138,4 +139,9 @@ sqlSession.update("updateByPrimaryKeySelective");
 MybatisUtil.change("money", "money = money + ");
 // 如果执行更新操作，set子句为set money = money + #{money}，假设name字段为主键
 sqlSession.update("updateByPrimaryKeySelective", p);
+```
+- 加行锁（只对INNODB表有效）
+```
+MybatisUtil.lockForUpdate(); // 在select后面加上for update
+Person person = sqlSession.selectOne(name, parameter); // name这一行将会被锁在
 ```
