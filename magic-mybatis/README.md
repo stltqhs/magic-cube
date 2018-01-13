@@ -125,7 +125,7 @@ person.setName("new name"); // 假设查询出来时name值为old name
 // 其中oldAge为20，oldName为old name
 sqlSession.update("updateByPrimaryVersionAlternative", new Object[]{person, null});
 ```
-### insertOnDuplicateKeyUpdate（仅支持MYSQL）
+### INSERT ... ON DUPLICATE KEY UPDATE（仅支持MYSQL）
 ```
 Person person = new Person();
 person.setName("name");
