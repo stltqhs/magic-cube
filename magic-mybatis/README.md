@@ -12,6 +12,15 @@
     <property name="resultSizeProxy" value="1" />
 </plugin>
 ```
+如果使用自定义的mapper，使用方法如下：
+```
+public interface PersonMapper extends AlternativeUpdateMapper {
+}
+```
+<code>AlternativeUpdateMapper</code>提供脏值更新的功能。
+系统已实现的Mapper如下：
+- AlternativeUpdateMapper  提供脏值更新的功能
+- VersionUpdateMapper  提供版本更新的功能
 ### 脏值更新
 实体类
 ```
