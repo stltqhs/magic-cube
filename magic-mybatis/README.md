@@ -47,12 +47,43 @@ sqlSession.update("updateByPrimaryKeyAlternative", person); // 只更新name字�
 ```
 
 ### 版本更新
+实体类
+```
+@Table("table")
+public class Person {
+    // fields
+    // getter/setter
+    private String name;
+    private Integer age;
+    private String gender;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+    public String getGender() {
+        return gender;
+    }
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+}
 使用方法
 ```
 Person person = sqlSession.selectOne(name, parameter);
 person.setAge(30); // 假设查询出来时age值为20
 // 下面的更新方式的where条件是 where id = #{id} and age = #{oldAge}
-sqlSession.update("updateByPrimaryVersionAlternative", person);
+sqlSession.update("updateByPrimaryVersionSelective", person);
 ```
 也可以忽略某些字段的版本
 ```
