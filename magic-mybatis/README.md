@@ -21,6 +21,7 @@ public interface PersonMapper extends AlternativeUpdateMapper {
 系统已实现的Mapper如下：
 - AlternativeUpdateMapper  提供脏值更新的功能
 - VersionUpdateMapper  提供版本更新的功能
+- InsertOnDuplicateKeyUpdateMapper  提供mysql的insert ... on duplicate key update的功能
 ### 脏值更新
 实体类
 ```
