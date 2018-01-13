@@ -45,3 +45,29 @@ Person person = sqlSession.selectOne(name, parameter);
 person.setName("new name");
 sqlSession.update("updateByPrimaryKeyAlternative", person); // 只更新name字段
 ```
+
+### 版本更新
+使用方法
+```
+Person person = sqlSession.selectOne(name, parameter);
+person.setAge(30); // 假设查询出来时age值为20
+// 下面的更新方式的where条件是 where id = #{id} and age = #{oldAge}
+sqlSession.update("updateByPrimaryVersionAlternative", person);
+```
+也可以忽略某些字段的版本
+```
+Person person = sqlSession.selectOne(name, parameter);
+person.setAge(30); // 假设查询出来时age值为20
+person.setName("new name");
+person.setGender("male");
+// 下面的更新方式的where条件是 where id = #{id} and age = #{oldAge}
+sqlSession.update("updateByPrimaryVersionAlternative", person, "-name,-gender");
+```
+<code>updateByPrimaryVersionAlternative(Object entity, String version)</code>中的<code>version</code>可以指定版本字段。
+“-”表示忽略一个版本字段，“+”表示增加一个版本字段。
+如果即没有“-”也没有“+”时表示只考虑该版本字段。如下：
+```
+"-name,+age" 表示忽略name版本，增加age版本
+"gender,age" 表示只考虑gender和age的版本
+"" 表示使用变更字段作为版本字段
+```
