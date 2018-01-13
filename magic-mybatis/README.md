@@ -124,3 +124,18 @@ person.setName("new name"); // 假设查询出来时name值为old name
 // 其中oldAge为20，oldName为old name
 sqlSession.update("updateByPrimaryVersionAlternative", person, null);
 ```
+### 工具类型使用
+改写<code>set</code>字句
+```
+Person p = new Person();
+p.setMoney(2.5);
+p.setName("yuqing");
+
+// 如果执行更新操作，set子句为set money = #{money}，假设name字段为主键
+sqlSession.update("updateByPrimaryKeySelective");
+
+// 改写money更新字段
+MybatisUtil.change("money", "money = money + ");
+// 如果执行更新操作，set子句为set money = money + #{money}，假设name字段为主键
+sqlSession.update("updateByPrimaryKeySelective");
+```
