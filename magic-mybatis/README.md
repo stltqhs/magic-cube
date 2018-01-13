@@ -83,7 +83,7 @@ public class Person {
 ```
 Person person = sqlSession.selectOne(name, parameter);
 person.setAge(30); // 假设查询出来时age值为20
-// 下面的更新方式的where条件是 where id = #{id} and age = #{oldAge}
+// 下面的更新方式的where条件是 where id = #{id} and age = #{oldAge}，其中oldAge为20
 sqlSession.update("updateByPrimaryVersionSelective", person);
 ```
 也可以忽略某些字段的版本
@@ -93,7 +93,7 @@ person.setAge(30); // 假设查询出来时age值为20
 person.setName("new name");
 person.setGender("male");
 // 下面的更新方式的where条件是 where id = #{id} and age = #{oldAge}
-sqlSession.update("updateByPrimaryVersionAlternative", person, "-name,-gender");
+sqlSession.update("updateByPrimaryVersionSelective", person, "-name,-gender");
 ```
 <code>updateByPrimaryVersionAlternative(Object entity, String version)</code>中的<code>version</code>可以指定版本字段。
 “-”表示忽略一个版本字段，“+”表示增加一个版本字段。
@@ -102,4 +102,16 @@ sqlSession.update("updateByPrimaryVersionAlternative", person, "-name,-gender");
 "-name,+age" 表示忽略name版本，增加age版本
 "gender,age" 表示只考虑gender和age的版本
 "" 表示使用变更字段作为版本字段
+```
+
+### 脏值和版本更新结合使用
+假设实体类被<code>@EnableAlternative</code>标记，使用方法如下（使用脏值更新的<code>Person</code>类）
+```
+Person person = sqlSession.selectOne(name, parameter);
+person.setAge(30); // 假设查询出来时age值为20
+person.setName("new name"); // 假设查询出来时name值为old name
+
+// 只更新age和name字段，且where条件子句是 where id=#{id} and age = #{oldAge} and name = #{oldName}
+// 其中oldAge为20，oldName为old name
+sqlSession.update("updateByPrimaryVersionAlternative", person, null);
 ```
