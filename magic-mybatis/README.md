@@ -52,7 +52,7 @@ public class Person {
 ```
 Person person = sqlSession.selectOne(name, parameter);
 person.setName("new name");
-sqlSession.update("updateByPrimaryKeyAlternative", person); // 只更新name字段
+sqlSession.update("updateByPrimaryKeyAlternative", person); // 只更新name字段，即set字句只有set name=#{name}，没有其他字段
 ```
 
 ### 版本更新
