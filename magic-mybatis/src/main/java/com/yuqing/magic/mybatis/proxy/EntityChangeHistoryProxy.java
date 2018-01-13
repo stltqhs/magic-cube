@@ -1,6 +1,7 @@
 package com.yuqing.magic.mybatis.proxy;
 
 import com.yuqing.magic.common.util.ReflectionUtil;
+import com.yuqing.magic.mybatis.util.MybatisUtil;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 import org.slf4j.Logger;
@@ -46,15 +47,13 @@ public class EntityChangeHistoryProxy implements MethodInterceptor {
             if (field != null) {
                 boolean record = true;
                 // 主键不需要记录
-                Id id = field.getAnnotation(Id.class);
-                if (id != null) {
+                if (MybatisUtil.isId(field)) {
                     record = false;
                 }
 
                 // @Transient标记的字段不需要记录
                 if (record) {
-                    Transient transientAnno = field.getAnnotation(Transient.class);
-                    if (transientAnno != null) {
+                    if (MybatisUtil.isTransient(field)) {
                         record  = false;
                     }
                 }

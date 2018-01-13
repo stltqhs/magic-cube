@@ -4,6 +4,7 @@ import com.yuqing.magic.common.util.CommonUtil;
 import com.yuqing.magic.common.util.ReflectionUtil;
 import com.yuqing.magic.mybatis.provider.base.BaseProvider;
 import com.yuqing.magic.mybatis.proxy.EntityChangeHistoryProxy;
+import com.yuqing.magic.mybatis.util.MybatisUtil;
 import com.yuqing.magic.persistence.util.PersistenceUtil;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.scripting.xmltags.*;
@@ -31,12 +32,13 @@ public class AlternativeUpdateProvider extends BaseProvider {
 
     private static class MyMixedSqlNode extends MixedSqlNode {
 
-        private Configuration configuration = null;
+        private final Configuration configuration;
 
         public static final String PARAMETER_NAME = "_parameter";
 
         public MyMixedSqlNode(List<SqlNode> contents) {
             super(contents);
+            configuration = null;
         }
 
         public MyMixedSqlNode(List<SqlNode> contents, Configuration configuration) {
@@ -131,57 +133,13 @@ public class AlternativeUpdateProvider extends BaseProvider {
 
         List<SqlNode> sqlNodeList = new LinkedList<>();
 
-        sqlNodeList.add(new StaticTextSqlNode("UPDATE " + PersistenceUtil.getTableName(entityClass)));
+        sqlNodeList.add(MybatisUtil.buildUpdateTableSqlNode(entityClass));
 
-        appendSetSqlNode(sqlNodeList, entityClass, ms);
+        MybatisUtil.appendSelectiveSetSqlNode(sqlNodeList, entityClass, ms, null);
 
-        appendWhereSqlNode(sqlNodeList, entityClass, ms);
+        MybatisUtil.appendPrimaryKeyWhereSqlNode(sqlNodeList, entityClass, ms, null);
 
         return new MyMixedSqlNode(sqlNodeList, ms.getConfiguration());
-    }
-
-    private void appendWhereSqlNode(List<SqlNode> sqlNodes, Class clazz,
-                                    MappedStatement ms) {
-
-        List<SqlNode> whereNodes = new LinkedList<>();
-        List<Field> fields = PersistenceUtil.getIdFields(clazz);
-
-        if (!CommonUtil.isNullOrEmpty(fields)) {
-            String p = "";
-            for (Field field : fields) {
-                String column = PersistenceUtil.getColumnName(clazz, field);
-                whereNodes.add(new StaticTextSqlNode(p + column + " = #{" + field.getName() + "}"));
-
-                p = " AND ";
-            }
-        }
-
-        sqlNodes.add(new WhereSqlNode(ms.getConfiguration(), new MixedSqlNode(whereNodes)));
-    }
-
-    private void appendSetSqlNode(List<SqlNode> sqlNodes, Class clazz,
-                                  MappedStatement ms) {
-
-        List<SqlNode> ifNodes = new LinkedList<>();
-
-        Field[] fields = clazz.getDeclaredFields();
-
-        for (Field field : fields) {
-            Id id = field.getAnnotation(Id.class);
-            if (id != null) {
-                continue;
-            }
-            StaticTextSqlNode columnNode = new StaticTextSqlNode(
-                    PersistenceUtil.getColumnName(clazz, field) + " = #{" + field.getName() + "}, ");
-
-            if (field.getType().equals(String.class)) {
-                ifNodes.add(new IfSqlNode(columnNode, field.getName() + " != null and " + field.getName() + ".trim().length() != 0"));
-            } else {
-                ifNodes.add(new IfSqlNode(columnNode, field.getName() + " != null"));
-            }
-        }
-
-        sqlNodes.add(new SetSqlNode(ms.getConfiguration(), new MixedSqlNode(ifNodes)));
     }
 
 }

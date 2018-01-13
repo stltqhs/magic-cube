@@ -3,6 +3,9 @@ package com.yuqing.magic.mybatis.interceptor;
 import com.yuqing.magic.common.util.NumberUtil;
 import com.yuqing.magic.common.util.ReflectionUtil;
 import com.yuqing.magic.mybatis.annotation.EnableAlternative;
+import com.yuqing.magic.mybatis.mapper.common.AlternativeUpdateMapper;
+import com.yuqing.magic.mybatis.mapper.common.VersionUpdateMapper;
+import com.yuqing.magic.mybatis.provider.AlternativeUpdateProvider;
 import com.yuqing.magic.mybatis.provider.base.BaseProvider;
 import com.yuqing.magic.mybatis.proxy.EntityChangeHistoryProxy;
 import com.yuqing.magic.mybatis.util.MybatisUtil;
@@ -13,8 +16,10 @@ import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.plugin.*;
+import org.apache.ibatis.scripting.defaults.DefaultParameterHandler;
 import org.apache.ibatis.scripting.xmltags.DynamicSqlSource;
 import org.apache.ibatis.scripting.xmltags.SqlNode;
+import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.slf4j.Logger;
@@ -24,9 +29,7 @@ import sun.misc.Unsafe;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * @author yuqing
@@ -55,6 +58,8 @@ public class MapperInterceptor implements Interceptor {
 
     private static final long SQL_SOURCE_OFFSET;
 
+    private static final long CONFIGURATION_OFFSET;
+
     public static final String SQL_SUFFIX = "Sql";
 
     /**
@@ -71,6 +76,7 @@ public class MapperInterceptor implements Interceptor {
         PROVIDER_TYPE_OFFSET = ReflectionUtil.getOffset(ProviderSqlSource.class, "providerType");
         PROVIDER_METHOD_OFFSET = ReflectionUtil.getOffset(ProviderSqlSource.class, "providerMethod");
         SQL_SOURCE_OFFSET = ReflectionUtil.getOffset(MappedStatement.class, "sqlSource");
+        CONFIGURATION_OFFSET = ReflectionUtil.getOffset(DefaultParameterHandler.class, "configuration");
     }
 
     @Override

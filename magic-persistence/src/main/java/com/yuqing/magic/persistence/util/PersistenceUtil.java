@@ -35,10 +35,10 @@ public class PersistenceUtil {
             return fieldName;
         }
 
-        return getColumnName(clazz, field);
+        return getColumnName(field);
     }
 
-    public static String getColumnName(Class clazz, Field field) {
+    public static String getColumnName(Field field) {
         Column column = field.getAnnotation(Column.class);
         if (column != null) {
             return column.name();

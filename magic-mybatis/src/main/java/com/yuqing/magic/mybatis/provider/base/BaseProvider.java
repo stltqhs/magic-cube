@@ -1,5 +1,6 @@
 package com.yuqing.magic.mybatis.provider.base;
 
+import com.yuqing.magic.mybatis.util.MybatisUtil;
 import org.apache.ibatis.mapping.MappedStatement;
 
 import java.lang.reflect.ParameterizedType;
@@ -14,17 +15,7 @@ import java.lang.reflect.Type;
 public class BaseProvider {
 
     public Class getEntityClass(MappedStatement ms) {
-        String msId = ms.getId();
-        Class<?> mapperClass = getMapperClass(msId);
-        Type[] types = mapperClass.getGenericInterfaces();
-        for (Type type : types) {
-            if (type instanceof ParameterizedType) {
-                ParameterizedType t = (ParameterizedType) type;
-                Class<?> returnType = (Class<?>) t.getActualTypeArguments()[0];
-                return returnType;
-            }
-        }
-        return null;
+        return MybatisUtil.getEntityClass(ms);
     }
 
     /**
