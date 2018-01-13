@@ -1,6 +1,6 @@
 package com.yuqing.magic.mybatis.entity;
 
-import com.yuqing.magic.mybatis.annotation.ProxyChangeHistory;
+import com.yuqing.magic.mybatis.annotation.EnableAlternative;
 
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -11,7 +11,7 @@ import java.util.Date;
  * Person实体类
  */
 @Table(name = "t_person")
-@ProxyChangeHistory
+@EnableAlternative
 public class Person {
 
     @Id

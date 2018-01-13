@@ -23,6 +23,6 @@
         </environment>
     </environments>
     <mappers>
-        <mapper resource="mapper/PersonDirtyUpdateMapper.xml"/>
+        <mapper resource="mapper/PersonAlternativeUpdateMapper.xml"/>
     </mappers>
 </configuration>

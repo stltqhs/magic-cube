@@ -16,7 +16,7 @@
 实体类
 ```
 @Table("table")
-@ProxyChangeHistory // 支持脏值更新
+@EnableAlternative // 支持脏值更新
 public class Person {
     // fields
     // getter/setter
@@ -43,5 +43,5 @@ public class Person {
 ```
 Person person = sqlSession.selectOne(name, parameter);
 person.setName("new name");
-sqlSession.update("updateByPrimaryKeyDirtySelective", person); // 只更新name字段
+sqlSession.update("updateByPrimaryKeyAlternative", person); // 只更新name字段
 ```

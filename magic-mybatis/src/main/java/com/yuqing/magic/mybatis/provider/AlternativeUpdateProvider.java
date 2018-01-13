@@ -25,9 +25,9 @@ import java.util.Map;
  *
  * @since 1.0.1
  */
-public class DirtyUpdateProvider extends BaseProvider {
+public class AlternativeUpdateProvider extends BaseProvider {
 
-    private static final Logger logger = LoggerFactory.getLogger(DirtyUpdateProvider.class);
+    private static final Logger logger = LoggerFactory.getLogger(AlternativeUpdateProvider.class);
 
     private static class MyMixedSqlNode extends MixedSqlNode {
 
@@ -118,11 +118,11 @@ public class DirtyUpdateProvider extends BaseProvider {
         }
     }
 
-    public String updateByPrimaryKeyDirtySelectiveSql(Object record) {
-        return "updateByPrimaryKeyDirtySelective";
+    public String updateByPrimaryKeyAlternativeSql(Object record) {
+        return "updateByPrimaryKeyAlternative";
     }
 
-    public SqlNode updateByPrimaryKeyDirtySelective(MappedStatement ms) {
+    public SqlNode updateByPrimaryKeyAlternative(MappedStatement ms) {
         Class entityClass = getEntityClass(ms);
 
         if (logger.isDebugEnabled()) {

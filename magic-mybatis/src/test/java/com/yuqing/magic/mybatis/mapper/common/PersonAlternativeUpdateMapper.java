@@ -8,5 +8,5 @@ import tk.mybatis.mapper.common.Mapper;
  *
  * @since 1.0.1
  */
-public interface PersonDirtyUpdateMapper extends DirtyUpdateMapper<Person> , Mapper<Person> {
+public interface PersonAlternativeUpdateMapper extends AlternativeUpdateMapper<Person>, Mapper<Person> {
 }

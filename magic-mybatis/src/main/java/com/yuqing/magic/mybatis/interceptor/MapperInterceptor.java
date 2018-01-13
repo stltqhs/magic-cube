@@ -2,7 +2,7 @@ package com.yuqing.magic.mybatis.interceptor;
 
 import com.yuqing.magic.common.util.NumberUtil;
 import com.yuqing.magic.common.util.ReflectionUtil;
-import com.yuqing.magic.mybatis.annotation.ProxyChangeHistory;
+import com.yuqing.magic.mybatis.annotation.EnableAlternative;
 import com.yuqing.magic.mybatis.provider.base.BaseProvider;
 import com.yuqing.magic.mybatis.proxy.EntityChangeHistoryProxy;
 import com.yuqing.magic.mybatis.util.MybatisUtil;
@@ -217,10 +217,10 @@ public class MapperInterceptor implements Interceptor {
             return result;
         }
 
-        ProxyChangeHistory proxyChangeHistory = result.getClass().getAnnotation(ProxyChangeHistory.class);
+        EnableAlternative proxyChangeHistory = result.getClass().getAnnotation(EnableAlternative.class);
 
         if (logger.isDebugEnabled()) {
-            logger.debug("{} find ProxyChangeHistory annotation for {}",
+            logger.debug("{} find EnableAlternative annotation for {}",
                     proxyChangeHistory != null ? "Has" : "Not", result.getClass());
         }
 

@@ -27,7 +27,7 @@ import java.util.Date;
  * @since 1.0.1
  */
 @RunWith(JUnit4.class)
-public class TestDirtyUpdateMapper {
+public class TestAlternativeUpdateMapper {
 
     @Test
     public void test() throws IOException, SQLException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
@@ -57,7 +57,7 @@ public class TestDirtyUpdateMapper {
 
         int rows = 0;
 
-        rows = sqlSession.update("com.yuqing.magic.mybatis.mapper.common.PersonDirtyUpdateMapper.updateByPrimaryKeyDirtySelective",
+        rows = sqlSession.update("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.updateByPrimaryKeyAlternative",
                 person);
 
         Assert.assertEquals(0, rows);
@@ -69,17 +69,17 @@ public class TestDirtyUpdateMapper {
         p1.setGender("男");
         p1.setMoney(new BigDecimal(1.2));
 
-        rows = sqlSession.insert("com.yuqing.magic.mybatis.mapper.common.PersonDirtyUpdateMapper.insertSelective", p1);
+        rows = sqlSession.insert("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.insertSelective", p1);
 
         Assert.assertEquals(1, rows);
 
-        Person person2 = sqlSession.selectOne("com.yuqing.magic.mybatis.mapper.common.PersonDirtyUpdateMapper.selectByPrimaryKey", 1L);
+        Person person2 = sqlSession.selectOne("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.selectByPrimaryKey", 1L);
 
         Assert.assertNotNull(person2);
 
         person2.setName("yuqing");
 
-        rows = sqlSession.update("com.yuqing.magic.mybatis.mapper.common.PersonDirtyUpdateMapper.updateByPrimaryKeyDirtySelective",
+        rows = sqlSession.update("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.updateByPrimaryKeyAlternative",
                 person2);
 
         Assert.assertEquals(1, rows);
