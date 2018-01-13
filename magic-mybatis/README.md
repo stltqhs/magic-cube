@@ -5,7 +5,7 @@
 在mybatis文件中添加拦截器
 ```
 <plugin interceptor="com.yuqing.magic.mybatis.interceptor.MapperInterceptor">
-    <!-- 当实体被@ProxyChangeHistory标记时才支持 -->
+    <!-- 当实体被@EnableAlternative标记时才支持 -->
     <property name="resultProxy" value="annotation" />
 
     <!-- 当返回的结果集数量为1时才支持 -->
