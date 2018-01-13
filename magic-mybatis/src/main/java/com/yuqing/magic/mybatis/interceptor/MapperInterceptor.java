@@ -1,25 +1,22 @@
 package com.yuqing.magic.mybatis.interceptor;
 
+import com.yuqing.magic.common.util.CommonUtil;
 import com.yuqing.magic.common.util.NumberUtil;
 import com.yuqing.magic.common.util.ReflectionUtil;
 import com.yuqing.magic.mybatis.annotation.EnableAlternative;
-import com.yuqing.magic.mybatis.mapper.common.AlternativeUpdateMapper;
-import com.yuqing.magic.mybatis.mapper.common.VersionUpdateMapper;
-import com.yuqing.magic.mybatis.provider.AlternativeUpdateProvider;
 import com.yuqing.magic.mybatis.provider.base.BaseProvider;
 import com.yuqing.magic.mybatis.proxy.EntityChangeHistoryProxy;
 import com.yuqing.magic.mybatis.util.MybatisUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.builder.annotation.ProviderSqlSource;
 import org.apache.ibatis.executor.Executor;
+import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.plugin.*;
-import org.apache.ibatis.scripting.defaults.DefaultParameterHandler;
 import org.apache.ibatis.scripting.xmltags.DynamicSqlSource;
 import org.apache.ibatis.scripting.xmltags.SqlNode;
-import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.slf4j.Logger;
@@ -29,7 +26,9 @@ import sun.misc.Unsafe;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Properties;
 
 /**
  * 处理基于{@link BaseProvider}的Mapper和工具类设置
@@ -40,9 +39,7 @@ import java.util.*;
  */
 @Intercepts({
         @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
-        @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class})/*,
-        @Signature(type = Executor.class, method = "insert", args = {MappedStatement.class, Object.class}),
-        @Signature(type = Executor.class, method = "delete", args = {MappedStatement.class, Object.class})*/
+        @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class})
 })
 public class MapperInterceptor implements Interceptor {
 
@@ -80,6 +77,16 @@ public class MapperInterceptor implements Interceptor {
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
+        if (invocation.getTarget() instanceof Executor) {
+            return interceptExecutor(invocation);
+        } else if (invocation.getTarget() instanceof StatementHandler) {
+            return interceptStatementHandler(invocation);
+        }
+
+        return invocation.proceed();
+    }
+
+    private Object interceptExecutor(Invocation invocation) throws IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         Object[] objects = invocation.getArgs();
         MappedStatement ms = (MappedStatement) objects[0];
         Class<?> providerType = getProviderType(ms.getSqlSource());
@@ -100,9 +107,29 @@ public class MapperInterceptor implements Interceptor {
         return result;
     }
 
+    private Object interceptStatementHandler(Invocation invocation) throws InvocationTargetException, IllegalAccessException {
+        String method = invocation.getMethod().getName();
+        if (method.equals("query")) {
+
+        } else if (method.equals("update")) {
+
+        }
+
+        return invocation.proceed();
+    }
+
+    private boolean canModifySql() {
+        return !CommonUtil.isNullOrEmpty(MybatisUtil.getSqlModifiers());
+    }
+
+    private void modifySql(MappedStatement ms) {
+        int i = 0;
+    }
+
     @Override
     public Object plugin(Object target) {
-        if (target instanceof Executor) {
+        if (target instanceof Executor
+                /*|| target instanceof StatementHandler*/) {
             return Plugin.wrap(target, this);
         } else {
             return target;

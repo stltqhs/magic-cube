@@ -1,6 +1,7 @@
 package com.yuqing.magic.mybatis.util;
 
 import com.yuqing.magic.common.util.CommonUtil;
+import com.yuqing.magic.mybatis.bean.SqlModifier;
 import com.yuqing.magic.mybatis.proxy.EntityChangeHistoryProxy;
 import com.yuqing.magic.persistence.util.PersistenceUtil;
 import com.yuqing.magic.proxy.util.ProxyUtil;
@@ -33,6 +34,8 @@ public class MybatisUtil {
     private static final Logger logger = LoggerFactory.getLogger(MybatisUtil.class);
 
     private static final ThreadLocal<Object> JUST_RETURN_LOCAL = new ThreadLocal<>();
+
+    private static final ThreadLocal<List<SqlModifier>> SQL_MODIFIERS_LOCAL = new ThreadLocal<>();
 
     /**
      * 通过msId获取接口类
@@ -291,5 +294,30 @@ public class MybatisUtil {
 
     public static Object getJustReturn() {
         return JUST_RETURN_LOCAL.get();
+    }
+
+    public static List<SqlModifier> getSqlModifiers() {
+        return SQL_MODIFIERS_LOCAL.get();
+    }
+
+    public static void clearSqlModifiers() {
+        SQL_MODIFIERS_LOCAL.set(null);
+    }
+
+    public static void addSqlModifier(SqlModifier sqlModifier) {
+        List<SqlModifier> list = SQL_MODIFIERS_LOCAL.get();
+        if (list == null) {
+            list = new LinkedList<>();
+        }
+        list.add(sqlModifier);
+        SQL_MODIFIERS_LOCAL.set(list);
+    }
+
+    public static void lockForUpdate() {
+        addSqlModifier(new SqlModifier(SqlModifier.TAILING, " FOR UPDATE"));
+    }
+
+    public static void change(String column, String newColumn) {
+        addSqlModifier(new SqlModifier(column, newColumn));
     }
 }
