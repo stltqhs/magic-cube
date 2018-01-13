@@ -3,6 +3,7 @@ package com.yuqing.magic.mybatis.mapper.common;
 import com.yuqing.magic.common.util.DateTimeUtil;
 import com.yuqing.magic.mybatis.entity.Person;
 import com.yuqing.magic.mybatis.util.MybatisUtil;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -113,6 +114,9 @@ public class TestVersionUpdateMapper {
         rows = mapper.updateByPrimaryKeyVersionSelective(person4, "name,money"); // 由于忽略了birthday，索引依然可以更新成功
 
         Assert.assertEquals(1, rows);
+
+        sqlSession.update("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.updateByPrimaryKeyVersionSelective",
+                new Object[]{person4, "name,money"});
     }
 
 }

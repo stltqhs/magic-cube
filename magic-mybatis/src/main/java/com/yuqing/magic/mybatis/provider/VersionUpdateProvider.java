@@ -1,5 +1,6 @@
 package com.yuqing.magic.mybatis.provider;
 
+import com.yuqing.magic.common.bean.NotFound;
 import com.yuqing.magic.common.util.CommonUtil;
 import com.yuqing.magic.common.util.ReflectionUtil;
 import com.yuqing.magic.mybatis.provider.base.BaseProvider;
@@ -33,6 +34,12 @@ public class VersionUpdateProvider extends BaseProvider {
 
     private static class MyMixedSqlNode extends MixedSqlNode {
 
+        public static final String ENTITY_NAME = "entity";
+        public static final String VERSION_NAME = "version";
+        public static final String ARRAY_NAME = "array";
+        public static final String PARAMETER_NAME = "_parameter";
+        public static final String COLLECTION_NAME = "collection";
+        private static final NotFound NOT_FOUND_MASK = new NotFound();
         private final Configuration configuration;
 
         private final boolean enableAlternative;
@@ -80,11 +87,11 @@ public class VersionUpdateProvider extends BaseProvider {
         }
 
         private Object getEntityParameter(Map<String, Object> bindings) {
-            return getParameter(bindings, "entity");
+            return getParameter(bindings, ENTITY_NAME);
         }
 
         private String getVersionString(Map<String, Object> bindings) {
-            Object object = getParameter(bindings, "version");
+            Object object = getParameter(bindings, VERSION_NAME);
             if (object instanceof String) {
                 return (String) object;
             }
@@ -92,7 +99,7 @@ public class VersionUpdateProvider extends BaseProvider {
         }
 
         private Object getParameter(Map<String, Object> bindings, String name) {
-            Object parameter = bindings.get("_parameter");
+            Object parameter = bindings.get(PARAMETER_NAME);
             if (parameter == null) {
                 return null;
             }
@@ -101,7 +108,46 @@ public class VersionUpdateProvider extends BaseProvider {
                 return null;
             }
 
+            Map<String, Object> paramMap = (Map) parameter;
+            if (paramMap.containsKey(ARRAY_NAME)) {
+                Object array = paramMap.get(ARRAY_NAME);
+
+                if (array != null && array instanceof Object[]) {
+                    Object[] paramArray = (Object[]) array;
+                    Object t = getParameter(bindings, paramArray, name);
+                    if (t != NOT_FOUND_MASK) {
+                        return t;
+                    }
+                }
+            } else if (paramMap.containsKey(COLLECTION_NAME)) {
+                Object collection = paramMap.get(COLLECTION_NAME);
+                if (collection instanceof Collection) {
+                    Object[] paramArray = new Object[((Collection) collection).size()];
+                    Iterator iterator = ((Collection) collection).iterator();
+                    int i = 0;
+                    while (iterator.hasNext()) {
+                        paramArray[i++] = iterator.next();
+                    }
+
+                    Object t = getParameter(bindings, paramArray, name);
+                    if (t != NOT_FOUND_MASK) {
+                        return t;
+                    }
+                }
+            }
+
             return ((Map) parameter).get(name);
+        }
+
+        private Object getParameter(Map<String, Object> bindings, Object[] paramArray, String name) {
+            if (ENTITY_NAME.equals(name) && paramArray.length > 0) {
+                bindings.put(ENTITY_NAME, paramArray[0]);
+                return paramArray[0];
+            } else if (VERSION_NAME.equals(name) && paramArray.length > 1) {
+                return paramArray[1];
+            }
+
+            return NOT_FOUND_MASK;
         }
 
         private Map<String, Boolean> buildExplicitVersions(Map<String, Object> bindings) {
