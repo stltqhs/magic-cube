@@ -1,7 +1,7 @@
 package com.yuqing.magic.common.util;
 
 import com.alibaba.fastjson.JSONObject;
-import com.sun.xml.internal.messaging.saaj.util.TeeInputStream;
+import org.apache.commons.io.input.TeeInputStream;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
