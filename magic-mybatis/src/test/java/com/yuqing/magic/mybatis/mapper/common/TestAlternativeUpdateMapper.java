@@ -79,10 +79,22 @@ public class TestAlternativeUpdateMapper {
 
         person2.setName("yuqing");
 
+        Person person3 = new Person();
+        person3.setId(1L);
+        person3.setGender("女");
+        sqlSession.update("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.updateByPrimaryKeySelective", person3);
+
         rows = sqlSession.update("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.updateByPrimaryKeyAlternative",
                 person2);
 
         Assert.assertEquals(1, rows);
+
+        // 由于只更新了name字段，所以gender就是女
+        Person person4 = sqlSession.selectOne("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.selectByPrimaryKey", 1L);
+
+        Assert.assertNotNull(person4);
+
+        Assert.assertEquals("女", person4.getGender());
     }
 
 }

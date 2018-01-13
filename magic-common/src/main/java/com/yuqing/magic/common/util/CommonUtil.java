@@ -249,36 +249,30 @@ public class CommonUtil {
             return null;
         }
 
-        if (list instanceof List) {
-            return (T) ((List) list).get(length - 1);
-        }
-
-        if (list instanceof Set) {
-            return (T) ((List) list).get(length - 1);
-        }
-
-        Object arr[] = list.toArray();
-
-        return (T) arr[length - 1];
+        return get(list, length - 1);
     }
 
     public static <T> T getFirst(Collection<T> list) {
+        return get(list, 0);
+    }
+
+    public static <T> T get(Collection<T> list, int index) {
         int length = lengthOf(list);
 
-        if (length == 0) {
+        if (length == 0 || index >= length) {
             return null;
         }
 
         if (list instanceof List) {
-            return (T) ((List) list).get(0);
+            return (T) ((List) list).get(index);
         }
 
         if (list instanceof Set) {
-            return (T) ((List) list).get(0);
+            return (T) ((List) list).get(index);
         }
 
         Object arr[] = list.toArray();
 
-        return (T) arr[0];
+        return (T) arr[index];
     }
 }

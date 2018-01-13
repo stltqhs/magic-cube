@@ -95,10 +95,10 @@ public class MybatisUtil {
             StaticTextSqlNode columnNode = new StaticTextSqlNode(
                     " AND " +
                             PersistenceUtil.getColumnName(field) + " = #{"
-                            + getAccessNameWithPrefix(StringUtils.capitalize(field.getName() + "}, "), accessPrefix));
+                            + getAccessNameWithPrefix(field.getName(), accessPrefix) + "}");
 
             ChooseSqlNode chooseSqlNode = new ChooseSqlNode((List) Arrays.asList(
-                    new IfSqlNode(columnNode, getAccessNameWithPrefix(StringUtils.capitalize(field.getName() + "}, "), accessPrefix) + " != null")),
+                    new IfSqlNode(columnNode, getAccessNameWithPrefix(field.getName(), accessPrefix) + " != null")),
                     new StaticTextSqlNode(" AND " + PersistenceUtil.getColumnName(field) + " is null"));
 
             whereNodes.add(new IfSqlNode(chooseSqlNode, "versionEnable." + field.getName()));

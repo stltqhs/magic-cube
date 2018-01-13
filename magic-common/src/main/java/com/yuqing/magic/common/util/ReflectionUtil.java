@@ -151,7 +151,7 @@ public class ReflectionUtil {
         method.setAccessible(true);
 
         try {
-            method.invoke(target, args);
+            return method.invoke(target, args);
         } catch (IllegalAccessException e) {
             logger.error("", e);
         } catch (InvocationTargetException e) {

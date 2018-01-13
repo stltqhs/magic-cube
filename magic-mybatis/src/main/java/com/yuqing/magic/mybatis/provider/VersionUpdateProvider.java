@@ -6,6 +6,8 @@ import com.yuqing.magic.mybatis.provider.base.BaseProvider;
 import com.yuqing.magic.mybatis.proxy.EntityChangeHistoryProxy;
 import com.yuqing.magic.mybatis.util.MybatisUtil;
 import com.yuqing.magic.persistence.util.PersistenceUtil;
+import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.scripting.xmltags.DynamicContext;
 import org.apache.ibatis.scripting.xmltags.MixedSqlNode;
@@ -15,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
@@ -62,10 +65,14 @@ public class VersionUpdateProvider extends BaseProvider {
                 logger.error("", e);
             } catch (IllegalAccessException e) {
                 logger.error("", e);
+            } catch (NoSuchMethodException e) {
+                logger.error("", e);
+            } catch (InvocationTargetException e) {
+                logger.error("", e);
             }
         }
 
-        private void doAddExtraParameters(DynamicContext context) throws InstantiationException, IllegalAccessException {
+        private void doAddExtraParameters(DynamicContext context) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
             // versionEnable 表示启用version的字段
             addVersionEnableParameters(context);
             // old 表示旧数据
@@ -74,6 +81,14 @@ public class VersionUpdateProvider extends BaseProvider {
 
         private Object getEntityParameter(Map<String, Object> bindings) {
             return getParameter(bindings, "entity");
+        }
+
+        private String getVersionString(Map<String, Object> bindings) {
+            Object object = getParameter(bindings, "version");
+            if (object instanceof String) {
+                return (String) object;
+            }
+            return null;
         }
 
         private Object getParameter(Map<String, Object> bindings, String name) {
@@ -89,42 +104,107 @@ public class VersionUpdateProvider extends BaseProvider {
             return ((Map) parameter).get(name);
         }
 
+        private Map<String, Boolean> buildExplicitVersions(Map<String, Object> bindings) {
+            String text = getVersionString(bindings);
+
+            Map<String, Boolean> explicitVersions = new HashMap<>();
+
+            if (StringUtils.isNotBlank(text)) {
+                String[] parts = text.split(",");
+                for (String p : parts) {
+                    if (p.startsWith("-")) {
+                        explicitVersions.put(p.substring(1), false);
+                    } else if (p.startsWith("+")) {
+                        explicitVersions.put(p.substring(1), true);
+                    } else {
+                        explicitVersions.put(p, true);
+                    }
+                }
+            }
+
+            return explicitVersions;
+        }
+
+        private boolean isOnlyVersions(Map<String, Object> bindings) {
+            String text = getVersionString(bindings);
+            if (StringUtils.isBlank(text)) {
+                return false;
+            }
+
+            if (text.indexOf("-") == -1
+                    && text.indexOf("+") == -1) {
+                return true;
+            }
+
+            return false;
+        }
+
+        private boolean isEnable(Map<String, Boolean> explicitVersions, String name) {
+            Boolean t = explicitVersions.get(name);
+
+            return t != null && t;
+        }
+
+        private boolean isMaybeEnable(Map<String, Boolean> explicitVersions, String name) {
+            boolean e = isEnable(explicitVersions, name);
+            if (e) {
+                return e;
+            }
+
+            return !explicitVersions.containsKey(name);
+        }
+
         private void addVersionEnableParameters(DynamicContext context) {
             Map<String, Object> bindings = context.getBindings();
             Object parameter = getEntityParameter(bindings);
 
-            if (parameter == null) {
-                return;
-            }
-
-            // versionEnable 表示启用version的字段
-
-            Field[] fields = parameter.getClass().getDeclaredFields();
             Map<String, Boolean> versionEnable = new HashMap<>();
+            Map<String, Boolean> explicitVersions = buildExplicitVersions(bindings);
+            boolean isOnly = isOnlyVersions(bindings);
 
-            EntityChangeHistoryProxy proxy = EntityChangeHistoryProxy.extract(parameter);
+            if (parameter != null) {
+                // versionEnable 表示启用version的字段
+                EntityChangeHistoryProxy proxy = EntityChangeHistoryProxy.extract(parameter);
 
-            if (proxy == null && enableAlternative) {
-                throw new IllegalArgumentException(parameter.getClass().getCanonicalName() + " is not a valid Class for DirtySelective()");
-            }
-
-            Map<Field, List<?>> changeHistory = proxy != null ? proxy.getChangeHistory() : null;
-            for (Field field : fields) {
-                if (MybatisUtil.isId(field) || MybatisUtil.isTransient(field)) {
-                    continue;
+                if (proxy == null && enableAlternative) {
+                    throw new IllegalArgumentException(parameter.getClass().getCanonicalName() + " is not a valid Class for DirtySelective()");
                 }
 
-                if (changeHistory != null && changeHistory.containsKey(field)) {
-                    versionEnable.put(PersistenceUtil.getColumnName(field), true);
-                } else {
-                    versionEnable.put(PersistenceUtil.getColumnName(field), false);
+                if (proxy != null) {
+                    Field[] fields = proxy.getTarget().getClass().getDeclaredFields();
+                    Map<Field, List<?>> changeHistory = proxy != null ? proxy.getChangeHistory() : null;
+                    for (Field field : fields) {
+                        if (MybatisUtil.isId(field) || MybatisUtil.isTransient(field)) {
+                            continue;
+                        }
+                        boolean enable;
+                        if (isOnly) {
+                            if (explicitVersions.containsKey(field.getName())) {
+                                enable = true;
+                            } else {
+                                enable = false;
+                            }
+                        } else {
+                            if (changeHistory != null
+                                    && changeHistory.containsKey(field)
+                                    && isMaybeEnable(explicitVersions, field.getName())) {
+                                enable = true;
+                            } else if (isEnable(explicitVersions, field.getName())) {
+                                enable = true;
+                            } else {
+                                enable = false;
+                            }
+                        }
+
+                        versionEnable.put(PersistenceUtil.getColumnName(field), enable);
+                    }
                 }
             }
 
             bindings.put("versionEnable", versionEnable);
         }
 
-        private void addOldParameters(DynamicContext context) throws IllegalAccessException, InstantiationException {
+        private void addOldParameters(DynamicContext context) throws IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
             // old 表示旧数据
             Map<String, Object> bindings = context.getBindings();
             Object parameter = getEntityParameter(bindings);
@@ -139,17 +219,20 @@ public class VersionUpdateProvider extends BaseProvider {
                 if (enableAlternative) {
                     throw new IllegalArgumentException(parameter.getClass().getCanonicalName() + " is not a valid Class for DirtySelective()");
                 }
+                bindings.put("old", new Object());
                 return;
             }
 
             Object newParameter = proxy.getTarget().getClass().newInstance();
+
+            PropertyUtils.copyProperties(newParameter, parameter);
 
             Iterator<Map.Entry<Field, List<?>>> iterator = proxy.getChangeHistory().entrySet().iterator();
 
             while (iterator.hasNext()) {
                 Map.Entry<Field, List<?>> item = iterator.next();
                 item.getKey().setAccessible(true);
-                item.getKey().set(newParameter, CommonUtil.getFirst(item.getValue()));
+                item.getKey().set(newParameter, CommonUtil.get(item.getValue(), 0));
             }
 
             bindings.put("old", newParameter);
