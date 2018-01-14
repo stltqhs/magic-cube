@@ -5,6 +5,7 @@
     <property name="LOG_LEVEL" value="DEBUG" />
     <property name="charset" value="UTF-8"/>
     <property name="ENABLE_CONSOLE" value="true" />
+    <property name="MAX_HISTORY" value="30" />
 
     <property resource="logback.properties" />
 
@@ -33,7 +34,7 @@
             <FileNamePattern>${LOG_HOME}/${FILE_NAME}-debug.%d{yyyy-MM-dd}.log</FileNamePattern>
 
             <!-- keep 30 days' worth of history -->
-            <maxHistory>30</maxHistory>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
         </rollingPolicy>
 
         <encoder>
@@ -53,7 +54,7 @@
             <FileNamePattern>${LOG_HOME}/${FILE_NAME}-info.%d{yyyy-MM-dd}.log</FileNamePattern>
 
             <!-- keep 30 days' worth of history -->
-            <maxHistory>30</maxHistory>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
         </rollingPolicy>
 
         <encoder>
@@ -71,7 +72,7 @@
             <!-- daily rollover -->
             <FileNamePattern>${LOG_HOME}/${FILE_NAME}-warn.%d{yyyy-MM-dd}.log</FileNamePattern>
             <!-- keep 30 days' worth of history -->
-            <maxHistory>30</maxHistory>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
         </rollingPolicy>
         <encoder>
             <Pattern>%d{HH:mm:ss.SSS} %level [%thread] %10logger[%line] - %msg%n</Pattern>
@@ -87,7 +88,7 @@
             <!-- daily rollover -->
             <FileNamePattern>${LOG_HOME}/${FILE_NAME}-error.%d{yyyy-MM-dd}.log</FileNamePattern>
             <!-- keep 30 days' worth of history -->
-            <maxHistory>30</maxHistory>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
         </rollingPolicy>
         <encoder>
             <Pattern>%d{HH:mm:ss.SSS} %level [%thread] %10logger[%line] - %msg%n</Pattern>
