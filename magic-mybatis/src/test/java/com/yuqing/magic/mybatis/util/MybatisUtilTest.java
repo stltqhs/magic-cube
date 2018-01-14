@@ -86,6 +86,12 @@ public class MybatisUtilTest {
         }
 
         Assert.assertTrue(throwException);
+
+        sqlSession.update("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.updateByPrimaryKeySelective", p3);
+
+        Person p4 = sqlSession.selectOne("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.selectByPrimaryKey", 1L);
+
+        Assert.assertNotNull(p4);
     }
 
 }
