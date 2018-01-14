@@ -2,8 +2,6 @@ package com.yuqing.magic.mybatis.util;
 
 import com.yuqing.magic.mybatis.entity.Person;
 import org.apache.ibatis.io.Resources;
-import org.apache.ibatis.mapping.BoundSql;
-import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
@@ -16,7 +14,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.Date;
 
 /**
