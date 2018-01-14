@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property name="LOG_HOME" value="/tmp/logs"/>
+    <property name="FILE_NAME" value="app"/>
+    <property name="LOG_LEVEL" value="DEBUG" />
+    <property name="charset" value="UTF-8"/>
+    <property name="ENABLE_CONSOLE" value="true" />
+
+    <property resource="logback.properties" />
+
+    <contextName>${FILE_NAME}</contextName>
+
+    <if condition='property("ENABLE_CONSOLE").contains("true")'>
+        <then>
+            <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder>
+                    <Pattern>.%d{HH:mm:ss.SSS} %level [%thread] %10logger[%line] - %msg%n
+                    </Pattern>
+                    <charset>${charset}</charset>
+                </encoder>
+                <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                    <level>DEBUG</level>
+                </filter>
+            </appender>
+        </then>
+    </if>
+
+    <appender name="dailyRollingFileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${LOG_HOME}/${FILE_NAME}-info.log</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+
+            <!-- daily rollover -->
+            <FileNamePattern>${LOG_HOME}/${FILE_NAME}-debug.%d{yyyy-MM-dd}.log</FileNamePattern>
+
+            <!-- keep 30 days' worth of history -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+
+        <encoder>
+            <Pattern>%d{HH:mm:ss.SSS} %level [%thread] %10logger[%line] - %msg%n</Pattern>
+            <charset>${charset}</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+    </appender>
+
+    <appender name="dailyRollingFileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${LOG_HOME}/${FILE_NAME}-info.log</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+
+            <!-- daily rollover -->
+            <FileNamePattern>${LOG_HOME}/${FILE_NAME}-info.%d{yyyy-MM-dd}.log</FileNamePattern>
+
+            <!-- keep 30 days' worth of history -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+
+        <encoder>
+            <Pattern>%d{HH:mm:ss.SSS} %level [%thread] %10logger[%line] - %msg%n</Pattern>
+            <charset>${charset}</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+    </appender>
+
+    <appender name="dailyRollingFileAppenderWarn" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${LOG_HOME}/${FILE_NAME}-warn.log</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <FileNamePattern>${LOG_HOME}/${FILE_NAME}-warn.%d{yyyy-MM-dd}.log</FileNamePattern>
+            <!-- keep 30 days' worth of history -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <Pattern>%d{HH:mm:ss.SSS} %level [%thread] %10logger[%line] - %msg%n</Pattern>
+            <charset>${charset}</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+    </appender>
+    <appender name="dailyRollingFileAppenderError" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${LOG_HOME}/${FILE_NAME}-error.log</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <FileNamePattern>${LOG_HOME}/${FILE_NAME}-error.%d{yyyy-MM-dd}.log</FileNamePattern>
+            <!-- keep 30 days' worth of history -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <Pattern>%d{HH:mm:ss.SSS} %level [%thread] %10logger[%line] - %msg%n</Pattern>
+            <charset>${charset}</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+    </appender>
+
+    <logger name="com.xpg.charge.mapper" level="${LOG_LEVEL}" />
+
+    <root level="${LOG_LEVEL}">
+        <if condition='property("ENABLE_CONSOLE").contains("true")'>
+            <then>
+                <appender-ref ref="consoleAppender" />
+            </then>
+        </if>
+        <appender-ref ref="dailyRollingFileAppender"/>
+        <appender-ref ref="dailyRollingFileAppenderWarn"/>
+        <appender-ref ref="dailyRollingFileAppenderError"/>
+    </root>
+</configuration>
