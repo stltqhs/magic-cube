@@ -64,7 +64,7 @@ public class MybatisUtilTest {
         p2.setMoney(new BigDecimal(3));
 
         MybatisUtil.change("money", "money = money +");
-        rows = sqlSession.insert("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.updateByPrimaryKeySelective", p2);
+        rows = sqlSession.update("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.updateByPrimaryKeySelective", p2);
 
         Assert.assertEquals(1, rows);
 
@@ -73,6 +73,19 @@ public class MybatisUtilTest {
         Assert.assertNotNull(p3);
 
         Assert.assertEquals(4.2, p3.getMoney().doubleValue(), 0.001);
+
+        sqlSession.update("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.updateByPrimaryKeySelective", p3);
+
+        boolean throwException = false;
+        try {
+            MybatisUtil.lockForUpdate();
+            sqlSession.selectOne("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.selectByPrimaryKey", 1L);
+        } catch (Exception e) {
+            throwException = true;
+            Assert.assertTrue(e.getMessage().indexOf("FOR UPDATE") != -1);
+        }
+
+        Assert.assertTrue(throwException);
     }
 
 }

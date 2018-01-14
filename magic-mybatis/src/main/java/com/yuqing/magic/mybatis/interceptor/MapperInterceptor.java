@@ -99,7 +99,7 @@ public class MapperInterceptor implements Interceptor {
         return invocation.proceed();
     }
 
-    private Object interceptExecutor(Invocation invocation) throws IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+    private Object interceptExecutor(Invocation invocation) throws IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException, SQLException {
         Object[] objects = invocation.getArgs();
         MappedStatement ms = (MappedStatement) objects[0];
         Class<?> providerType = getProviderType(ms.getSqlSource());
@@ -108,7 +108,19 @@ public class MapperInterceptor implements Interceptor {
         }
 
         if (canModifySql()) {
-            modifySql(invocation);
+            invocation = modifySql(invocation);
+
+            if (invocation.getArgs() != objects
+                    && invocation.getMethod().getName().equals("query")
+                    && invocation.getArgs().length == 6) {
+                Executor executor = (Executor) invocation.getTarget();
+                executor.query(ms,
+                        invocation.getArgs()[1],
+                        (RowBounds) invocation.getArgs()[2],
+                        (ResultHandler) invocation.getArgs()[3],
+                        (CacheKey) invocation.getArgs()[4],
+                        (BoundSql) invocation.getArgs()[5]);
+            }
         }
 
         if (MybatisUtil.hasJustReturn()) {
@@ -227,12 +239,12 @@ public class MapperInterceptor implements Interceptor {
         return null;
     }
 
-    private void modifySql(Invocation invocation) {
+    private Invocation modifySql(Invocation invocation) {
         Object[] args = invocation.getArgs();
         MappedStatement ms = (MappedStatement) args[0];
         Object parameter = args[1];
         Executor executor = (Executor) invocation.getTarget();
-        CacheKey cacheKey;
+        CacheKey cacheKey = null;
         BoundSql boundSql = null;
         boolean modify = false;
 
@@ -257,7 +269,19 @@ public class MapperInterceptor implements Interceptor {
             List<SqlModifier> sqlModifierList = MybatisUtil.getSqlModifiers();
             MybatisUtil.clearSqlModifiers();
             doModifySql((ModifiableBoundSql) boundSql, sqlModifierList);
+
+            if (cacheKey != null && boundSql != null) {
+                Object[] newArgs = new Object[6];
+                for (int i = 0; i < args.length; i++) {
+                    newArgs[i] = args[i];
+                }
+                newArgs[4] = cacheKey;
+                newArgs[5] = boundSql;
+                invocation = new Invocation(invocation.getTarget(), invocation.getMethod(), newArgs);
+            }
         }
+
+        return invocation;
     }
 
     private void doModifySql(ModifiableBoundSql boundSql, List<SqlModifier> sqlModifiers) {
