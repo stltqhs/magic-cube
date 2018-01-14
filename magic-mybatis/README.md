@@ -142,7 +142,7 @@ p.setMoney(2.5);
 p.setName("yuqing");
 
 // 如果执行更新操作，set子句为set money = #{money}，假设name字段为主键
-sqlSession.update("updateByPrimaryKeySelective");
+sqlSession.update("updateByPrimaryKeySelective", p);
 
 // 改写money更新字段
 MybatisUtil.change("money", "money = money + ");
