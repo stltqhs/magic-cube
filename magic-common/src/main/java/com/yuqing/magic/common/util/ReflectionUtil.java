@@ -136,6 +136,29 @@ public class ReflectionUtil {
         return null;
     }
 
+    public static void setFieldValue(Object target, Field field, Object value) {
+        if (field == null) {
+            return;
+        }
+
+        field.setAccessible(true);
+
+        try {
+            field.set(target, value);
+        } catch (IllegalAccessException e) {
+            logger.error("", e);
+        }
+
+    }
+
+    public static void setFieldValue(Object target, String name, Object value) {
+        Field field = getField(target.getClass(), name, true);
+
+        if (field != null) {
+            setFieldValue(target, field, value);
+        }
+    }
+
     /**
      * 调用方法的值
      * @param target
@@ -160,6 +183,42 @@ public class ReflectionUtil {
 
         return null;
     }
+    public static Object getMethodValue(Object target, String methodName, Object[] args, Class[] argsType) {
+        Method method = getMethod(target.getClass(), methodName, argsType, true);
+
+        if (method == null) {
+            return null;
+        }
+
+        method.setAccessible(true);
+
+        try {
+            return method.invoke(target, args);
+        } catch (IllegalAccessException e) {
+            logger.error("", e);
+        } catch (InvocationTargetException e) {
+            logger.error("", e);
+        }
+
+        return null;
+    }
+
+    private static Class[] extractObjectArgsClass(Object[] args) {
+        if (args == null) {
+            return null;
+        }
+        Class clazz[] = new Class[args.length];
+
+        for (int i = 0; i < args.length; i++) {
+            clazz[i] = null;
+            if (args[i] != null) {
+                clazz[i] = args[i].getClass();
+            }
+        }
+
+        return clazz;
+    }
+
 
     /**
      * 获取clazz的methodName方法

@@ -59,13 +59,20 @@ public class MybatisUtilTest {
 
         Assert.assertEquals(1, rows);
 
-        Person p2 = sqlSession.selectOne("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.selectByPrimaryKey", 1L);
+        Person p2 = new Person();
+        p2.setId(1L);
+        p2.setMoney(new BigDecimal(3));
 
-        MappedStatement ms = sqlSession.getConfiguration().getMappedStatement("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.selectByPrimaryKey");
+        MybatisUtil.change("money", "money = money +");
+        rows = sqlSession.insert("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.updateByPrimaryKeySelective", p2);
 
-        BoundSql boundSql = ms.getBoundSql(1L);
+        Assert.assertEquals(1, rows);
 
-        Assert.assertTrue(boundSql.getSql().indexOf("FOR UPDATE") != -1);
+        Person p3 = sqlSession.selectOne("com.yuqing.magic.mybatis.mapper.common.PersonAlternativeUpdateMapper.selectByPrimaryKey", 1L);
+
+        Assert.assertNotNull(p3);
+
+        Assert.assertEquals(4.2, p3.getMoney().doubleValue(), 0.001);
     }
 
 }

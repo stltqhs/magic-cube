@@ -1,19 +1,20 @@
 package com.yuqing.magic.mybatis.util;
 
 import com.yuqing.magic.common.util.CommonUtil;
+import com.yuqing.magic.mybatis.bean.ModifiableBoundSql;
 import com.yuqing.magic.mybatis.bean.SqlModifier;
 import com.yuqing.magic.mybatis.proxy.EntityChangeHistoryProxy;
 import com.yuqing.magic.persistence.util.PersistenceUtil;
 import com.yuqing.magic.proxy.util.ProxyUtil;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.scripting.xmltags.*;
+import org.apache.ibatis.session.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.persistence.Id;
-import javax.persistence.Transient;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
@@ -319,5 +320,15 @@ public class MybatisUtil {
 
     public static void change(String column, String newColumn) {
         addSqlModifier(new SqlModifier(column, newColumn));
+    }
+
+    public static ModifiableBoundSql createModifiableBoundSql(Configuration configuration, BoundSql boundSql) {
+
+        ModifiableBoundSql bs = new ModifiableBoundSql(configuration,
+                boundSql.getSql(),
+                boundSql.getParameterMappings(),
+                boundSql.getParameterObject());
+
+        return bs;
     }
 }

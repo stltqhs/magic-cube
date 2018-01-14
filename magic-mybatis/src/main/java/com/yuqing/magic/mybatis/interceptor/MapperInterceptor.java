@@ -1,34 +1,45 @@
 package com.yuqing.magic.mybatis.interceptor;
 
+import com.sun.javafx.collections.MappingChange;
 import com.yuqing.magic.common.util.CommonUtil;
 import com.yuqing.magic.common.util.NumberUtil;
 import com.yuqing.magic.common.util.ReflectionUtil;
 import com.yuqing.magic.mybatis.annotation.EnableAlternative;
+import com.yuqing.magic.mybatis.bean.ModifiableBoundSql;
+import com.yuqing.magic.mybatis.bean.SqlModifier;
 import com.yuqing.magic.mybatis.provider.base.BaseProvider;
 import com.yuqing.magic.mybatis.proxy.EntityChangeHistoryProxy;
 import com.yuqing.magic.mybatis.util.MybatisUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.builder.annotation.ProviderSqlSource;
+import org.apache.ibatis.cache.CacheKey;
+import org.apache.ibatis.executor.BaseExecutor;
 import org.apache.ibatis.executor.Executor;
+import org.apache.ibatis.executor.statement.BaseStatementHandler;
 import org.apache.ibatis.executor.statement.StatementHandler;
+import org.apache.ibatis.logging.Log;
+import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.plugin.*;
 import org.apache.ibatis.scripting.xmltags.DynamicSqlSource;
 import org.apache.ibatis.scripting.xmltags.SqlNode;
+import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.misc.Unsafe;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Properties;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.*;
 
 /**
  * 处理基于{@link BaseProvider}的Mapper和工具类设置
@@ -39,7 +50,9 @@ import java.util.Properties;
  */
 @Intercepts({
         @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
-        @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class})
+        @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class, CacheKey.class, BoundSql.class}),
+        @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class}),
+        @Signature(type = StatementHandler.class, method = "update", args = {Statement.class})
 })
 public class MapperInterceptor implements Interceptor {
 
@@ -94,6 +107,10 @@ public class MapperInterceptor implements Interceptor {
             replaceSqlSource(ms, providerType);
         }
 
+        if (canModifySql()) {
+            modifySql(invocation);
+        }
+
         if (MybatisUtil.hasJustReturn()) {
             Object jt = MybatisUtil.getJustReturn();
             MybatisUtil.clearJustReturn();
@@ -112,7 +129,9 @@ public class MapperInterceptor implements Interceptor {
         if (method.equals("query")) {
 
         } else if (method.equals("update")) {
-
+            if (canModifySql()) {
+                modifySql(invocation.getArgs(), (StatementHandler) invocation.getTarget());
+            }
         }
 
         return invocation.proceed();
@@ -122,14 +141,255 @@ public class MapperInterceptor implements Interceptor {
         return !CommonUtil.isNullOrEmpty(MybatisUtil.getSqlModifiers());
     }
 
-    private void modifySql(MappedStatement ms) {
-        int i = 0;
+    private void modifySql(Object[] args, StatementHandler statementHandler) {
+        List<SqlModifier> sqlModifierList = MybatisUtil.getSqlModifiers();
+        MybatisUtil.clearSqlModifiers();
+
+        if (!(statementHandler instanceof StatementHandler)) {
+            return;
+        }
+
+        BaseStatementHandler baseStatementHandler = getBaseStatementHandler((StatementHandler) statementHandler);
+
+        if (baseStatementHandler == null) {
+            return;
+        }
+
+        Field configurationField = ReflectionUtil.getField(BaseStatementHandler.class, "configuration", false);
+
+        if (configurationField == null) {
+            return;
+        }
+
+        Configuration configuration = (Configuration) ReflectionUtil.getFieldValue(baseStatementHandler, configurationField);
+
+        if (configuration == null) {
+            return;
+        }
+
+        BoundSql boundSql = MybatisUtil.createModifiableBoundSql(configuration
+                ,
+                baseStatementHandler.getBoundSql());
+
+
+        doModifySql((ModifiableBoundSql) boundSql, sqlModifierList);
+
+        ReflectionUtil.setFieldValue(baseStatementHandler, "boundSql", boundSql);
+
+        Executor executor = (Executor) ReflectionUtil.getFieldValue(baseStatementHandler, "executor");
+        MappedStatement mappedStatement = (MappedStatement) ReflectionUtil.getFieldValue(baseStatementHandler, "mappedStatement");
+
+        if (executor instanceof BaseExecutor) {
+
+            BaseExecutor baseExecutor = (BaseExecutor) executor;
+
+            StatementHandler sh = configuration.newStatementHandler(executor,
+                    mappedStatement /*MappedStatement*/,
+                    boundSql.getParameterObject() /*parameterObject*/,
+                    RowBounds.DEFAULT /*rowBounds*/,
+                    null /**/,
+                    boundSql);
+
+
+            Statement stmt;
+            Connection connection = (Connection) ReflectionUtil.getMethodValue(executor,
+                    "getConnection",
+                    new Object[]{mappedStatement.getStatementLog()},
+                    new Class[]{Log.class});
+            try {
+                stmt = sh.prepare(connection, baseExecutor.getTransaction().getTimeout());
+                sh.parameterize(stmt);
+
+                args[0] = stmt;
+            } catch (SQLException e) {
+                logger.error("", e);
+                return;
+            }
+        }
+
+    }
+
+    private BaseStatementHandler getBaseStatementHandler(StatementHandler statementHandler) {
+        if (statementHandler instanceof BaseStatementHandler) {
+            return (BaseStatementHandler) statementHandler;
+        }
+
+        Field delegate = ReflectionUtil.getField(statementHandler.getClass(), "delegate", false);
+
+        if (delegate != null) {
+            Object delegateObject = ReflectionUtil.getFieldValue(statementHandler, delegate);
+
+            if (delegateObject instanceof StatementHandler) {
+                return getBaseStatementHandler((StatementHandler) delegateObject);
+            }
+        }
+
+        return null;
+    }
+
+    private void modifySql(Invocation invocation) {
+        Object[] args = invocation.getArgs();
+        MappedStatement ms = (MappedStatement) args[0];
+        Object parameter = args[1];
+        Executor executor = (Executor) invocation.getTarget();
+        CacheKey cacheKey;
+        BoundSql boundSql = null;
+        boolean modify = false;
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("modify {} sql", ms.getId());
+        }
+
+        if (args.length == 4) {
+            boundSql = MybatisUtil.createModifiableBoundSql(ms.getConfiguration(), ms.getBoundSql(parameter));
+            cacheKey = executor.createCacheKey(ms, parameter, (RowBounds) args[2], boundSql);
+            modify = true;
+        } else if (args.length == 6){
+            boundSql = (BoundSql) args[5];
+            if (!(boundSql instanceof ModifiableBoundSql)) {
+                boundSql = MybatisUtil.createModifiableBoundSql(ms.getConfiguration(), boundSql);
+                args[5] = boundSql;
+                modify = true;
+            }
+        }
+
+        if (modify && boundSql instanceof ModifiableBoundSql) {
+            List<SqlModifier> sqlModifierList = MybatisUtil.getSqlModifiers();
+            MybatisUtil.clearSqlModifiers();
+            doModifySql((ModifiableBoundSql) boundSql, sqlModifierList);
+        }
+    }
+
+    private void doModifySql(ModifiableBoundSql boundSql, List<SqlModifier> sqlModifiers) {
+        if (CommonUtil.isNullOrEmpty(sqlModifiers)) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("There's no SqlModifier exists in this Thread.");
+            }
+            return;
+        }
+
+        String sql = boundSql.getSql();
+
+        for (SqlModifier sqlModifier : sqlModifiers) {
+            if (Objects.equals(SqlModifier.HEADER, sqlModifier.getColumn())) {
+                sql = sqlModifier.getModification() + sql;
+            } else if (Objects.equals(SqlModifier.TAILING, sqlModifier.getColumn())) {
+                sql = sql + sqlModifier.getModification();
+            } else {
+                sql = replaceColumn(sql, sqlModifier);
+            }
+        }
+
+        boundSql.setSql(sql);
+    }
+
+    private String replaceColumn(String sql , SqlModifier sqlModifier) {
+        int step = 0;
+        StringBuilder buffer = new StringBuilder();
+        for (int i = 0; i < sql.length(); i++) {
+            char c = sql.charAt(i);
+            if (step == 0) { // find update
+                if (c == 'u' || c == 'U') {
+                    buffer.append(c);
+                    int j = i;
+                    i++;
+                    for (;; i++) {
+                        c = sql.charAt(i);
+                        if (c == ' ' || c == '\n' || c == '`') {
+                            break;
+                        }
+                        buffer.append(c);
+                    }
+
+                    if (buffer.toString().equalsIgnoreCase("update")) {
+                        step = 1;
+                    } else {
+                        i = j;
+                    }
+                    buffer.setLength(0);
+                }
+            } else if (step == 1) { // find table
+                if (!(c == ' ' || c == '\n' || c == '`')) {
+                    i++;
+                    for(;; i++) {
+                        c = sql.charAt(i);
+                        if (c == ' ' || c == '\n' || c == '`') {
+                            step = 2;
+                            break;
+                        }
+                    }
+                }
+            } else if (step == 2) { // find set
+                if (c == 's' || c == 'S') {
+                    buffer.append(c);
+                    int j = i;
+                    i++;
+                    for (;; i++) {
+                        c = sql.charAt(i);
+                        if (c == ' ' || c == '\n' || c == '`') {
+                            break;
+                        }
+                        buffer.append(c);
+                    }
+
+                    if (buffer.toString().equalsIgnoreCase("set")) {
+                        step = 3;
+                    } else {
+                        i = j;
+                    }
+                    buffer.setLength(0);
+                }
+            } else if (step == 3) { // find column
+                sql = replaceColumn(sql, sqlModifier, i);
+                break;
+            }
+        }
+        return sql;
+    }
+
+    private String replaceColumn(String sql, SqlModifier sqlModifier, int start) {
+        StringBuilder buffer = new StringBuilder();
+        int step = 0; // find column name
+        int j = -1, k = 0;
+        int i = start;
+        for (; i < sql.length(); i++) {
+            char c = sql.charAt(i);
+            if (step == 0 && c != ' ' && c != '`' && c != '\n' && c != ',') {
+                buffer.append(c);
+                if (j == -1) {
+                    j = i;
+                }
+            } else if (step == 1 && c == '=') {
+                step = 2;
+                k = i + 1;
+                if (buffer.toString().equalsIgnoreCase(sqlModifier.getColumn())) {
+                    step = 3;
+                    break;
+                }
+            } else if (step == 2){
+                step = 0;
+                buffer.setLength(0);
+                j = -1;
+            } else if (step == 0) {
+                step = 1; // find =
+                i--;
+            }
+        }
+        if (step == 3) {
+            buffer.setLength(0);
+            buffer.append(sql.substring(0, j));
+            buffer.append(sqlModifier.getModification());
+            buffer.append(sql.substring(k));
+
+            return buffer.toString();
+        }
+        return sql;
     }
 
     @Override
     public Object plugin(Object target) {
         if (target instanceof Executor
-                /*|| target instanceof StatementHandler*/) {
+                || target instanceof StatementHandler) {
             return Plugin.wrap(target, this);
         } else {
             return target;

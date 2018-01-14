@@ -21,7 +21,8 @@ public class SqlModifier {
      * @param modification
      */
     public SqlModifier(String column, String modification) {
-
+        this.column = column;
+        this.modification = modification;
     }
 
     public String getColumn() {
