@@ -7,8 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author YutsingLee
+ * @author yuqing
  * @date 2018-01-14
+ *
+ * @since 1.0.1
  */
 @RunWith(JUnit4.class)
 public class AppTest {
