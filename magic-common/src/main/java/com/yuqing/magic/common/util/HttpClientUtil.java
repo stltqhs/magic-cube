@@ -26,6 +26,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -509,7 +510,7 @@ public class HttpClientUtil {
         HttpUriRequest httpRequest = buildHttpRequest(url, method);
         CloseableHttpResponse httpResponse = null;
 
-        addHeaders(httpRequest, headers);
+        addHeaders(httpRequest, refineHeaders(headers, entity, charset));
         attachEntity(httpRequest, entity);
 
         setTimeout(httpRequest, timeout);
@@ -610,7 +611,7 @@ public class HttpClientUtil {
 
         HttpUriRequest httpRequest = buildHttpRequest(url, method);
 
-        addHeaders(httpRequest, headers);
+        addHeaders(httpRequest, refineHeaders(headers, entity, DEFAULT_CHARSET));
         attachEntity(httpRequest, entity);
 
         setTimeout(httpRequest, timeout);
@@ -640,7 +641,7 @@ public class HttpClientUtil {
 
         HttpUriRequest httpRequest = buildHttpRequest(url, method);
 
-        addHeaders(httpRequest, headers);
+        addHeaders(httpRequest, refineHeaders(headers, entity, DEFAULT_CHARSET));
         attachEntity(httpRequest, entity);
 
         setTimeout(httpRequest, timeout);
@@ -773,6 +774,47 @@ public class HttpClientUtil {
             Map.Entry<String, String> item = iterator.next();
             request.addHeader(item.getKey(), item.getValue());
         }
+    }
+
+    public static Map<String, String> refineHeaders(Map<String, String> defaultHeaders, byte data[], String charset) {
+        if (data == null || data.length == 0) {
+            return defaultHeaders;
+        }
+
+        String contentType = "Content-Type: application/x-www-form-urlencoded; charset=" + charset;
+        if (data[0] == '{') {
+            contentType = "Content-Type: application/json; charset=" + charset;
+        }
+
+        if (defaultHeaders == null) {
+            defaultHeaders = a2h(contentType);
+        } else if (!defaultHeaders.containsKey("Content-Type")) {
+            defaultHeaders.putAll(a2h(contentType));
+        }
+
+        return defaultHeaders;
+    }
+
+    /**
+     * 将字符串转换为数组
+     * @param headers
+     * @return
+     */
+    public static Map<String, String> a2h(String ...headers) {
+        Map<String, String> headersMap = new HashMap<>();
+
+        for (String h : headers) {
+            String arr[] = h.split(":");
+            String key = arr[0].trim();
+            String value = key;
+            if (arr.length > 1) {
+                value = arr[1].trim();
+            }
+
+            headersMap.put(key, value);
+        }
+
+        return headersMap;
     }
 
     private static void attachEntity(HttpRequest httpRequest, byte entity[]) {
